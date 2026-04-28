@@ -36,6 +36,7 @@ export default function SearchPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCity, setSelectedCity] = useState(cityParam);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
