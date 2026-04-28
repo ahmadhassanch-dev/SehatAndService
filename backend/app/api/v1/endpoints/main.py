@@ -6,7 +6,8 @@ from app.schemas.schemas import (
     CategoryResponse, ProviderListResponse, ProviderResponse, BookingResponse,
     ReviewResponse, ChatResponse, SearchRequest, SearchResponse, BookingCreate,
     ReviewCreate, ChatCreate, UserCreate, UserResponse, OTPRequest, OTPVerify,
-    TokenResponse, CustomerDashboard, ProviderDashboard, AdminDashboard
+    TokenResponse, CustomerDashboard, ProviderDashboard, AdminDashboard,
+    ProviderServiceResponse, ProviderServiceCreate, ProviderServiceUpdate
 )
 from app.services import service
 
@@ -229,6 +230,33 @@ async def get_admin_dashboard(db: AsyncSession = Depends(get_db)):
     """Get admin dashboard data"""
     stats = await service.get_admin_stats(db)
     return stats
+
+
+# ================== Provider Services ==================
+
+@router.post("/provider/services", response_model=ProviderServiceResponse)
+async def create_provider_service(service_data: ProviderServiceCreate, db: AsyncSession = Depends(get_db), provider_id: int = 1):
+    """Create a new service for a provider"""
+    return await service.create_provider_service(db, provider_id, service_data)
+
+
+@router.get("/provider/services", response_model=List[ProviderServiceResponse])
+async def get_provider_services(db: AsyncSession = Depends(get_db), provider_id: int = 1):
+    """Get services for a provider"""
+    return await service.get_provider_services(db, provider_id)
+
+
+@router.put("/provider/services/{service_id}", response_model=ProviderServiceResponse)
+async def update_provider_service(service_id: int, service_update: ProviderServiceUpdate, db: AsyncSession = Depends(get_db)):
+    """Update a service"""
+    return await service.update_provider_service(db, service_id, service_update)
+
+
+@router.delete("/provider/services/{service_id}")
+async def delete_provider_service(service_id: int, db: AsyncSession = Depends(get_db)):
+    """Delete a service"""
+    await service.delete_provider_service(db, service_id)
+    return {"message": "Service deleted successfully"}
 
 
 # ================== Health Check ==================

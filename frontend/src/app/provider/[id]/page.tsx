@@ -27,23 +27,28 @@ export default function ProviderPage() {
   
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingStep, setBookingStep] = useState(1);
-  const [selectedService, setSelectedService] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
-  const [address, setAddress] = useState("");
-  const [description, setDescription] = useState("");
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const [bookingData, setBookingData] = useState({
+      date: "",
+      time: "",
+      address: "",
+      notes: ""
+  });
   const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
     const fetchProviderData = async () => {
       setLoading(true);
       try {
-        const [providerData, reviewsData] = await Promise.all([
+        const [providerData, reviewsData, servicesData] = await Promise.all([
           api.getProviderById(providerId),
-          api.getProviderReviews(providerId)
+          api.getProviderReviews(providerId),
+          api_ext.getProviderServices(providerId)
         ]);
         setProvider(providerData);
         setReviews(reviewsData);
+        setServices(servicesData);
       } catch (error) {
         console.error("Failed to fetch provider details:", error);
       } finally {
@@ -69,24 +74,26 @@ export default function ProviderPage() {
     try {
       await api.createBooking({
         provider_id: providerId,
-        service: selectedService || provider.category,
-        description,
-        scheduled_date: selectedDate,
-        scheduled_time: selectedTime,
-        address,
+        service_id: selectedService?.id,
+        service: selectedService?.name,
+        description: bookingData.notes,
+        scheduled_date: bookingData.date,
+        scheduled_time: bookingData.time,
+        address: bookingData.address,
         city: provider.user?.city || provider.city,
       });
-      alert("Booking confirmed! You will receive a confirmation shortly.");
+      alert("Booking successfully established!");
       setShowBookingModal(false);
       setBookingStep(1);
       router.push("/dashboard");
     } catch (error) {
       console.error("Booking failed:", error);
-      alert("Failed to create booking. Please try again.");
+      alert("Failed to establish booking. Please try again.");
     } finally {
       setBookingLoading(false);
     }
   };
+
 
   const safeParse = (data: any, fallback: any = []) => {
     if (!data) return fallback;

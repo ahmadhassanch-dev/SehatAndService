@@ -5,14 +5,38 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.orm import selectinload
-from app.models.models import User, Provider, Booking, Review, Chat, Category, Complaint, UserRole, BookingStatus
+from app.models.models import User, Provider, Booking, Review, Chat, Category, Complaint, UserRole, BookingStatus, ProviderService
 from app.schemas.schemas import (
     UserCreate, ProviderCreate, BookingCreate, ReviewCreate, ChatCreate,
-    ProviderListResponse, UserResponse
+    ProviderListResponse, UserResponse, ProviderServiceCreate, ProviderServiceUpdate
 )
 
 # Mock OTP storage (in-memory is fine for MVP OTPs)
 MOCK_OTPS = {}
+
+# ================== Provider Services ==================
+
+async def create_provider_service(db: AsyncSession, provider_id: int, service_data: ProviderServiceCreate) -> ProviderService:
+    service = ProviderService(provider_id=provider_id, **service_data.dict())
+    db.add(service)
+    await db.commit()
+    await db.refresh(service)
+    return service
+
+async def get_provider_services(db: AsyncSession, provider_id: int) -> List[ProviderService]:
+    result = await db.execute(select(ProviderService).where(ProviderService.provider_id == provider_id, ProviderService.is_active == True))
+    return result.scalars().all()
+
+async def update_provider_service(db: AsyncSession, service_id: int, service_update: ProviderServiceUpdate) -> Optional[ProviderService]:
+    stmt = update(ProviderService).where(ProviderService.id == service_id).values(**service_update.dict(exclude_unset=True))
+    await db.execute(stmt)
+    await db.commit()
+    return await db.get(ProviderService, service_id)
+
+async def delete_provider_service(db: AsyncSession, service_id: int):
+    stmt = update(ProviderService).where(ProviderService.id == service_id).values(is_active=False)
+    await db.execute(stmt)
+    await db.commit()
 
 # ================== User Services ==================
 
@@ -178,6 +202,7 @@ async def search_providers(
 # ================== Booking Services ==================
 
 async def create_booking(db: AsyncSession, booking_data: dict) -> Booking:
+    # If service_id is provided, we could optionally fetch price here
     booking = Booking(**booking_data)
     db.add(booking)
     await db.commit()

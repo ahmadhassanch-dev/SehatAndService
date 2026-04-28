@@ -79,6 +79,40 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+# ================== Provider Service Schemas ==================
+
+class ProviderServiceBase(BaseModel):
+    name: str = Field(..., min_length=2)
+    description: Optional[str] = None
+    price: float = Field(..., gt=0)
+    duration_minutes: Optional[int] = None
+    category: Optional[str] = None
+
+
+class ProviderServiceCreate(ProviderServiceBase):
+    pass
+
+
+class ProviderServiceUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    duration_minutes: Optional[int] = None
+    category: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ProviderServiceResponse(ProviderServiceBase):
+    id: int
+    provider_id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # ================== Provider Schemas ==================
 
 class ProviderBase(BaseModel):
@@ -157,6 +191,7 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     provider_id: int
+    service_id: Optional[int] = None
 
 
 class BookingUpdate(BaseModel):

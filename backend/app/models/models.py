@@ -5,6 +5,24 @@ import enum
 from app.core.database import Base
 
 
+class ProviderService(Base):
+    __tablename__ = "provider_services"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"), index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Float, nullable=False)
+    duration_minutes = Column(Integer, nullable=True)
+    category = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship
+    provider = relationship("Provider")
+
+
 class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
     PROVIDER = "provider"
