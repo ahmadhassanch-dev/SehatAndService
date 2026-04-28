@@ -230,7 +230,7 @@ export default function HomePage() {
       </section>
 
       {/* Modern High-Contrast Categories */}
-      <section className="py-16 md:py-32 bg-slate-950 relative overflow-hidden">
+      <section className="py-16 md:py-32 bg-slate-950 relative overflow-hidden mt-16">
         <div className="container-custom relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-20 gap-6 md:gap-8 px-4">
             <div className="max-w-2xl text-center md:text-left">
