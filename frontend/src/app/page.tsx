@@ -103,7 +103,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-950 font-sans overflow-x-hidden">
       {/* Dynamic Luxury Hero */}
-      <section className="relative min-h-screen flex items-center pt-24 md:pt-32 pb-32 md:pb-48 bg-midnight-mesh">
+      <section className="relative min-h-screen flex items-center pt-24 md:pt-32 pb-32 md:pb-48 bg-midnight-mesh z-30">
         {/* Abstract Light Particles - Overflow restricted to this container */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
            {[...Array(5)].map((_, i) => (
