@@ -48,12 +48,48 @@ async def get_user_by_phone(db: AsyncSession, phone: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.phone == phone))
     return result.scalar_one_or_none()
 
+async def get_provider_by_user_id(db: AsyncSession, user_id: int) -> Optional[Provider]:
+    result = await db.execute(select(Provider).where(Provider.user_id == user_id))
+    return result.scalar_one_or_none()
+
 async def create_user(db: AsyncSession, user_data: dict) -> User:
+    if "role" not in user_data:
+        user_data["role"] = UserRole.CUSTOMER.value
     user = User(**user_data)
     db.add(user)
     await db.commit()
     await db.refresh(user)
     return user
+
+async def become_provider(db: AsyncSession, user_id: int, provider_data: dict) -> Provider:
+    # Update user role
+    stmt = update(User).where(User.id == user_id).values(role=UserRole.PROVIDER.value)
+    await db.execute(stmt)
+    
+    # Create provider profile
+    provider = Provider(user_id=user_id, **provider_data)
+    db.add(provider)
+    await db.commit()
+    
+    # Eagerly load the provider with user relationship for the response
+    result = await db.execute(
+        select(Provider)
+        .options(selectinload(Provider.user))
+        .where(Provider.user_id == user_id)
+    )
+    return result.scalar_one()
+
+async def update_provider_profile(db: AsyncSession, provider_id: int, update_data: dict) -> Optional[Provider]:
+    stmt = update(Provider).where(Provider.id == provider_id).values(**update_data)
+    await db.execute(stmt)
+    await db.commit()
+    
+    result = await db.execute(
+        select(Provider)
+        .options(selectinload(Provider.user))
+        .where(Provider.id == provider_id)
+    )
+    return result.scalar_one_or_none()
 
 # ================== Category Services ==================
 
@@ -202,12 +238,20 @@ async def search_providers(
 # ================== Booking Services ==================
 
 async def create_booking(db: AsyncSession, booking_data: dict) -> Booking:
-    # If service_id is provided, we could optionally fetch price here
     booking = Booking(**booking_data)
     db.add(booking)
     await db.commit()
-    await db.refresh(booking)
-    return booking
+    
+    # Reload with relationships
+    result = await db.execute(
+        select(Booking)
+        .options(
+            selectinload(Booking.customer),
+            selectinload(Booking.provider).selectinload(Provider.user)
+        )
+        .where(Booking.id == booking.id)
+    )
+    return result.scalar_one()
 
 async def get_bookings(db: AsyncSession, user_id: int, role: str = "customer") -> List[Booking]:
     query = select(Booking).options(selectinload(Booking.provider).selectinload(Provider.user))
@@ -296,11 +340,14 @@ async def get_dashboard_stats(db: AsyncSession, user_id: int, role: str = "custo
         completed = [b for b in bookings if b.status == "completed"]
         total_earnings = sum(b.price for b in completed)
         
-        # Get provider rating
-        provider_res = await db.execute(select(Provider.rating).where(Provider.user_id == user_id))
-        rating = provider_res.scalar_one_or_none() or 0
+        # Get provider info
+        provider_res = await db.execute(select(Provider.id, Provider.rating).where(Provider.user_id == user_id))
+        provider_data = provider_res.first()
+        provider_id = provider_data[0] if provider_data else 0
+        rating = provider_data[1] if provider_data else 0
         
         return {
+            "provider_id": provider_id,
             "pending_bookings": pending,
             "accepted_bookings": accepted,
             "completed_bookings": completed,

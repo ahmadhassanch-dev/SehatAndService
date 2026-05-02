@@ -52,6 +52,14 @@ const mockMessages = [
 ];
 
 export default function ChatPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <ChatContent />
+    </React.Suspense>
+  );
+}
+
+function ChatContent() {
   const searchParams = useSearchParams();
   const conversationId = searchParams.get("id");
   const { language, t } = useLanguage();
@@ -168,7 +176,7 @@ export default function ChatPage() {
                         </h3>
                         <span className="text-xs text-gray-500">{conversation.time}</span>
                       </div>
-                      <p className="text-sm text-gray-500 truncate">{conversation.category}</p>
+                      <p className="text-sm text-gray-500 truncate">{conversation.provider.category}</p>
                       <p className="text-sm text-gray-600 truncate mt-1">{conversation.lastMessage}</p>
                     </div>
                     {conversation.unread > 0 && (

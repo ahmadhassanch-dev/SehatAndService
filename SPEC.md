@@ -13,17 +13,19 @@
 
 ### Frontend
 - **Framework:** Next.js 14 (App Router)
-- **Styling:** Tailwind CSS
-- **State Management:** React Context + Zustand
+- **Styling:** Tailwind CSS (Custom Luxury Dark Theme)
+- **State Management:** React Context API (Auth, Language)
 - **Icons:** Lucide React
 - **Language:** TypeScript
+- **API Client:** Custom Fetch-based Client with Auth interceptors
 
 ### Backend
 - **Framework:** FastAPI
-- **Database:** PostgreSQL (simulated with in-memory for MVP)
-- **Cache:** Redis (simulated for MVP)
-- **Authentication:** JWT + OTP
-- **Language:** Python
+- **Database:** PostgreSQL (SQLAlchemy Async + asyncpg)
+- **Design Pattern:** Service Layer Pattern (logic isolated from routes)
+- **Authentication:** JWT (simulated with OTP verification)
+- **Validation:** Pydantic v2
+- **Language:** Python 3.11+
 
 ---
 

@@ -11,10 +11,15 @@ class ProviderService(Base):
     id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("providers.id"), index=True)
     name = Column(String(200), nullable=False)
+    name_urdu = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
+    description_urdu = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
+    is_negotiable = Column(Boolean, default=True)
     duration_minutes = Column(Integer, nullable=True)
     category = Column(String(100), nullable=True)
+    image_url = Column(String(500), nullable=True)
+    status = Column(String(20), default="active")  # active, pending, inactive
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -79,7 +84,18 @@ class Provider(Base):
     review_count = Column(Integer, default=0)
     verified = Column(Boolean, default=False)
     cnic = Column(String(20), nullable=True)
+    
+    # Advanced Business Fields
+    business_name = Column(String(255), nullable=True)
+    business_reg_number = Column(String(100), nullable=True)
+    bank_name = Column(String(100), nullable=True)
+    account_holder = Column(String(255), nullable=True)
+    account_number = Column(String(100), nullable=True)
+    jazzcash_number = Column(String(20), nullable=True)
+    easypaisa_number = Column(String(20), nullable=True)
+    
     is_approved = Column(Boolean, default=False)
+    status = Column(String(20), default="pending")  # pending, approved, suspended
     response_time = Column(String(50), nullable=True)
     availability = Column(Text, nullable=True)  # JSON string
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -22,15 +22,18 @@ A production-ready, mobile-first Pakistani hyperlocal services marketplace built
 
 ### Frontend
 - **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS
-- **State Management**: React Context + Zustand
+- **Styling**: Tailwind CSS (Custom Luxury Dark Theme)
+- **State Management**: React Context API (Auth, Language)
+- **Internationalization**: Custom `LanguageContext` (English & Urdu)
+- **Network**: Custom `ApiClient` (Fetch-based with Auth Interceptors)
 - **Language**: TypeScript
 
 ### Backend
-- **Framework**: FastAPI
-- **Database**: PostgreSQL (simulated for MVP)
-- **Authentication**: JWT + OTP
-- **Language**: Python
+- **Framework**: FastAPI (Python 3.11+)
+- **Database**: PostgreSQL with SQLAlchemy Async (asyncpg)
+- **Architecture**: Service Layer Pattern (logic encapsulated in `app/services/`)
+- **Validation**: Pydantic v2
+- **Authentication**: JWT-based (simulated OTP verification flow)
 
 ## 📱 Service Categories
 

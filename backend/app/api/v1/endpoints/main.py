@@ -2,12 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
+from app.core.security import create_access_token
+from app.api.deps import (
+    get_current_active_user, get_current_provider, get_current_admin,
+    get_any_user, get_current_provider_profile
+)
+from app.models.models import User, UserRole, Provider
 from app.schemas.schemas import (
     CategoryResponse, ProviderListResponse, ProviderResponse, BookingResponse,
     ReviewResponse, ChatResponse, SearchRequest, SearchResponse, BookingCreate,
     ReviewCreate, ChatCreate, UserCreate, UserResponse, OTPRequest, OTPVerify,
     TokenResponse, CustomerDashboard, ProviderDashboard, AdminDashboard,
-    ProviderServiceResponse, ProviderServiceCreate, ProviderServiceUpdate
+    ProviderServiceResponse, ProviderServiceCreate, ProviderServiceUpdate,
+    ProviderCreate, ProviderUpdate
 )
 from app.services import service
 
@@ -75,6 +82,12 @@ async def get_provider_reviews(provider_id: int, db: AsyncSession = Depends(get_
     return reviews
 
 
+@router.get("/providers/{provider_id}/services", response_model=List[ProviderServiceResponse])
+async def get_public_provider_services(provider_id: int, db: AsyncSession = Depends(get_db)):
+    """Get services for a provider (Public)"""
+    return await service.get_provider_services(db, provider_id)
+
+
 # ================== Search ==================
 
 @router.post("/search", response_model=SearchResponse)
@@ -98,10 +111,14 @@ async def search_providers(search: SearchRequest, db: AsyncSession = Depends(get
 # ================== Bookings ==================
 
 @router.post("/bookings", response_model=BookingResponse)
-async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_db), customer_id: int = 100):
-    """Create a new booking"""
+async def create_booking(
+    booking: BookingCreate, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_any_user)
+):
+    """Create a new booking (Available to both Customers and Providers)"""
     booking_data = {
-        "customer_id": customer_id,
+        "customer_id": current_user.id,
         "provider_id": booking.provider_id,
         "service": booking.service,
         "description": booking.description,
@@ -117,15 +134,24 @@ async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_
 
 
 @router.get("/bookings", response_model=List[BookingResponse])
-async def get_bookings(db: AsyncSession = Depends(get_db), user_id: int = 100, role: str = "customer"):
-    """Get user bookings"""
-    bookings = await service.get_bookings(db, user_id, role)
+async def get_bookings(
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_any_user)
+):
+    """Get user bookings based on their role"""
+    bookings = await service.get_bookings(db, current_user.id, current_user.role)
     return bookings
 
 
 @router.put("/bookings/{booking_id}", response_model=BookingResponse)
-async def update_booking(booking_id: int, status: str = None, db: AsyncSession = Depends(get_db)):
+async def update_booking(
+    booking_id: int, 
+    status: str = None, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_any_user)
+):
     """Update booking status"""
+    # Authorization check could be added here to ensure user belongs to booking
     update_data = {}
     if status:
         update_data["status"] = status
@@ -138,12 +164,16 @@ async def update_booking(booking_id: int, status: str = None, db: AsyncSession =
 # ================== Reviews ==================
 
 @router.post("/reviews", response_model=ReviewResponse)
-async def create_review(review: ReviewCreate, db: AsyncSession = Depends(get_db), user_id: int = 100):
+async def create_review(
+    review: ReviewCreate, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_any_user)
+):
     """Create a new review"""
     review_data = {
         "booking_id": review.booking_id,
         "provider_id": review.provider_id,
-        "user_id": user_id,
+        "user_id": current_user.id,
         "rating": review.rating,
         "comment": review.comment,
         "photos": review.photos
@@ -155,11 +185,15 @@ async def create_review(review: ReviewCreate, db: AsyncSession = Depends(get_db)
 # ================== Chat ==================
 
 @router.post("/chats", response_model=ChatResponse)
-async def create_chat(chat: ChatCreate, db: AsyncSession = Depends(get_db), sender_id: int = 100):
+async def create_chat(
+    chat: ChatCreate, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_any_user)
+):
     """Send a chat message"""
     chat_data = {
         "booking_id": chat.booking_id,
-        "sender_id": sender_id,
+        "sender_id": current_user.id,
         "message": chat.message,
         "message_type": chat.message_type
     }
@@ -168,7 +202,11 @@ async def create_chat(chat: ChatCreate, db: AsyncSession = Depends(get_db), send
 
 
 @router.get("/chats/{booking_id}", response_model=List[ChatResponse])
-async def get_chats(booking_id: int, db: AsyncSession = Depends(get_db)):
+async def get_chats(
+    booking_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_any_user)
+):
     """Get chat messages for a booking"""
     chats = await service.get_chats(db, booking_id)
     return chats
@@ -188,45 +226,78 @@ async def send_otp(request: OTPRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/auth/otp/verify", response_model=TokenResponse)
 async def verify_otp(request: OTPVerify, db: AsyncSession = Depends(get_db)):
-    """Verify OTP and return token"""
+    """Verify OTP and return real JWT token"""
     if not await service.verify_otp(db, request.phone, request.otp):
         raise HTTPException(status_code=400, detail="Invalid OTP")
 
     # Create or get user
     user = await service.get_user_by_phone(db, request.phone)
     if not user:
-        # Create mock user for now if not exists
         user = await service.create_user(db, {
             "name": "User " + request.phone[-4:],
             "phone": request.phone,
-            "role": "customer",
+            "role": UserRole.CUSTOMER.value,
             "is_verified": True
         })
 
+    # Create real JWT token
+    access_token = create_access_token(data={"sub": str(user.id)})
+
     return TokenResponse(
-        access_token="mock_token_" + request.phone,
+        access_token=access_token,
         user=user
     )
+
+
+@router.post("/auth/become-provider", response_model=ProviderResponse)
+async def become_provider(
+    provider_data: ProviderCreate, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
+    """Transition a customer to a provider role"""
+    return await service.become_provider(db, current_user.id, provider_data.dict())
+
+
+@router.put("/provider/profile", response_model=ProviderResponse)
+async def update_provider_profile(
+    update_data: ProviderUpdate, 
+    db: AsyncSession = Depends(get_db), 
+    provider: Provider = Depends(get_current_provider_profile)
+):
+    """Update provider business settings"""
+    return await service.update_provider_profile(db, provider.id, update_data.dict(exclude_unset=True))
 
 
 # ================== Dashboard ==================
 
 @router.get("/dashboard/customer", response_model=CustomerDashboard)
-async def get_customer_dashboard(db: AsyncSession = Depends(get_db), user_id: int = 100):
+async def get_customer_dashboard(
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
     """Get customer dashboard data"""
-    stats = await service.get_dashboard_stats(db, user_id, "customer")
+    stats = await service.get_dashboard_stats(db, current_user.id, "customer")
     return stats
 
 
 @router.get("/dashboard/provider", response_model=ProviderDashboard)
-async def get_provider_dashboard(db: AsyncSession = Depends(get_db), user_id: int = 100):
+async def get_provider_dashboard(
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
     """Get provider dashboard data"""
-    stats = await service.get_dashboard_stats(db, user_id, "provider")
+    if current_user.role != UserRole.PROVIDER.value:
+        raise HTTPException(status_code=403, detail="Not a provider")
+    stats = await service.get_dashboard_stats(db, current_user.id, "provider")
     return stats
 
 
 @router.get("/dashboard/admin", response_model=AdminDashboard)
-async def get_admin_dashboard(db: AsyncSession = Depends(get_db)):
+async def get_admin_dashboard(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
     """Get admin dashboard data"""
     stats = await service.get_admin_stats(db)
     return stats
@@ -235,26 +306,51 @@ async def get_admin_dashboard(db: AsyncSession = Depends(get_db)):
 # ================== Provider Services ==================
 
 @router.post("/provider/services", response_model=ProviderServiceResponse)
-async def create_provider_service(service_data: ProviderServiceCreate, db: AsyncSession = Depends(get_db), provider_id: int = 1):
-    """Create a new service for a provider"""
-    return await service.create_provider_service(db, provider_id, service_data)
+async def create_provider_service(
+    service_data: ProviderServiceCreate, 
+    db: AsyncSession = Depends(get_db), 
+    provider: Provider = Depends(get_current_provider_profile)
+):
+    """Create a new service for a provider (Only available to Providers)"""
+    return await service.create_provider_service(db, provider.id, service_data)
 
 
 @router.get("/provider/services", response_model=List[ProviderServiceResponse])
-async def get_provider_services(db: AsyncSession = Depends(get_db), provider_id: int = 1):
+async def get_provider_services(
+    db: AsyncSession = Depends(get_db), 
+    provider: Provider = Depends(get_current_provider_profile)
+):
     """Get services for a provider"""
-    return await service.get_provider_services(db, provider_id)
+    return await service.get_provider_services(db, provider.id)
 
 
 @router.put("/provider/services/{service_id}", response_model=ProviderServiceResponse)
-async def update_provider_service(service_id: int, service_update: ProviderServiceUpdate, db: AsyncSession = Depends(get_db)):
+async def update_provider_service(
+    service_id: int, 
+    service_update: ProviderServiceUpdate, 
+    db: AsyncSession = Depends(get_db),
+    provider: Provider = Depends(get_current_provider_profile)
+):
     """Update a service"""
-    return await service.update_provider_service(db, service_id, service_update)
+    # Verify service belongs to provider
+    existing_service = await service.update_provider_service(db, service_id, service_update)
+    if not existing_service or existing_service.provider_id != provider.id:
+        raise HTTPException(status_code=404, detail="Service not found or unauthorized")
+    return existing_service
 
 
 @router.delete("/provider/services/{service_id}")
-async def delete_provider_service(service_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_provider_service(
+    service_id: int, 
+    db: AsyncSession = Depends(get_db),
+    provider: Provider = Depends(get_current_provider_profile)
+):
     """Delete a service"""
+    # Verify service belongs to provider
+    services = await service.get_provider_services(db, provider.id)
+    if not any(s.id == service_id for s in services):
+        raise HTTPException(status_code=404, detail="Service not found or unauthorized")
+        
     await service.delete_provider_service(db, service_id)
     return {"message": "Service deleted successfully"}
 

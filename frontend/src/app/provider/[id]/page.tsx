@@ -8,11 +8,12 @@ import {
   ChevronRight, ChevronDown, Calendar, Clock3, CheckCircle, XCircle,
   AlertCircle, Send, ArrowRight, Loader2, Award, 
   ThumbsUp, Shield, Zap, Info, Share2, Heart, PlayCircle,
-  ArrowUpRight, Verified
+  ArrowUpRight, Verified, Plus, Edit2, Trash2, Save
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
+import * as api_ext from "@/lib/api_extensions";
 
 export default function ProviderPage() {
   const params = useParams();
@@ -37,29 +38,101 @@ export default function ProviderPage() {
   });
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchProviderData = async () => {
-      setLoading(true);
-      try {
-        const [providerData, reviewsData, servicesData] = await Promise.all([
-          api.getProviderById(providerId),
-          api.getProviderReviews(providerId),
-          api_ext.getProviderServices(providerId)
-        ]);
-        setProvider(providerData);
-        setReviews(reviewsData);
-        setServices(servicesData);
-      } catch (error) {
-        console.error("Failed to fetch provider details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // CRUD State for Provider
+  const [isEditingService, setIsEditingService] = useState(false);
+  const [serviceEditingId, setServiceEditingId] = useState<number | null>(null);
+  const [serviceFormData, setServiceFormData] = useState({
+    name: "",
+    name_urdu: "",
+    description: "",
+    description_urdu: "",
+    price: 0,
+    is_negotiable: true,
+    category: "",
+    duration_minutes: 60
+  });
 
+  const isOwner = currentUser?.role === "provider" && provider?.user_id === currentUser?.id;
+
+  const fetchProviderData = async () => {
+    setLoading(true);
+    try {
+      const [providerData, reviewsData, servicesData] = await Promise.all([
+        api.getProviderById(providerId),
+        api.getProviderReviews(providerId),
+        api_ext.getProviderServices(providerId)
+      ]);
+      setProvider(providerData);
+      setReviews(reviewsData);
+      setServices(servicesData);
+    } catch (error) {
+      console.error("Failed to fetch provider details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (providerId) {
       fetchProviderData();
     }
   }, [providerId]);
+
+  const handleAddService = () => {
+    setServiceFormData({
+      name: "",
+      name_urdu: "",
+      description: "",
+      description_urdu: "",
+      price: 0,
+      is_negotiable: true,
+      category: provider?.category || "",
+      duration_minutes: 60
+    });
+    setServiceEditingId(null);
+    setIsEditingService(true);
+  };
+
+  const handleEditService = (service: any) => {
+    setServiceFormData({
+      name: service.name,
+      name_urdu: service.name_urdu || "",
+      description: service.description || "",
+      description_urdu: service.description_urdu || "",
+      price: service.price,
+      is_negotiable: service.is_negotiable ?? true,
+      category: service.category || provider?.category || "",
+      duration_minutes: service.duration_minutes || 60
+    });
+    setServiceEditingId(service.id);
+    setIsEditingService(true);
+  };
+
+  const handleDeleteService = async (id: number) => {
+    if (confirm("Permanently remove this service?")) {
+      try {
+        await api_ext.deleteProviderService(id);
+        fetchProviderData();
+      } catch (error) {
+        console.error("Delete failed:", error);
+      }
+    }
+  };
+
+  const handleServiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (serviceEditingId) {
+        await api_ext.updateProviderService(serviceEditingId, serviceFormData);
+      } else {
+        await api_ext.createProviderService(serviceFormData);
+      }
+      setIsEditingService(false);
+      fetchProviderData();
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
+  };
 
   const handleBookNow = () => {
     if (!isAuthenticated) {
@@ -242,6 +315,75 @@ export default function ProviderPage() {
                      </div>
                    </div>
                  </div>
+
+                 {/* Custom Services Menu */}
+                 <div className="mt-12 md:mt-16 bg-slate-900/40 rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 border border-white/10">
+                    <div className="flex justify-between items-center mb-8 md:mb-12">
+                      <h2 className="text-2xl md:text-3xl font-black text-white flex items-center gap-4">
+                        <Zap className="w-6 md:w-8 h-6 md:h-8 text-secondary" />
+                        Service Menu
+                      </h2>
+                      {isOwner && (
+                        <button 
+                          onClick={handleAddService}
+                          className="bg-secondary text-slate-950 px-4 md:px-6 py-2 md:py-3 rounded-xl font-black uppercase tracking-widest text-[8px] md:text-[10px] flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" /> Add Skill
+                        </button>
+                      )}
+                    </div>
+                    
+                    {services.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                         {services.map((service: any) => (
+                           <div key={service.id} className="group bg-white/5 rounded-3xl p-6 md:p-8 border border-white/5 hover:border-secondary/20 transition-all duration-500 relative">
+                              {isOwner && (
+                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                   <button 
+                                    onClick={() => handleEditService(service)}
+                                    className="p-2 bg-white/5 hover:bg-blue-500/20 text-white/40 hover:text-blue-500 rounded-lg transition-all"
+                                   >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                   </button>
+                                   <button 
+                                    onClick={() => handleDeleteService(service.id)}
+                                    className="p-2 bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-500 rounded-lg transition-all"
+                                   >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                   </button>
+                                </div>
+                              )}
+                              
+                              <div className="flex justify-between items-start mb-4">
+                                 <div className="pr-12">
+                                    <h4 className="text-lg md:text-xl font-black text-white group-hover:text-secondary transition-colors">{service.name}</h4>
+                                    {service.name_urdu && (
+                                      <p className="text-white/40 font-urdu text-right mt-1" dir="rtl">{service.name_urdu}</p>
+                                    )}
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-lg md:text-xl font-black text-white">Rs. {service.price}</p>
+                                    <p className="text-[8px] md:text-[10px] font-black text-secondary uppercase tracking-widest">{service.is_negotiable ? "Negotiable" : "Fixed"}</p>
+                                 </div>
+                              </div>
+                              <p className="text-white/40 text-xs md:text-sm leading-relaxed line-clamp-2">{service.description}</p>
+                              {!isOwner && (
+                                <button 
+                                  onClick={() => { setSelectedService(service); setShowBookingModal(true); }}
+                                  className="mt-6 flex items-center gap-2 text-[10px] font-black text-secondary uppercase tracking-widest hover:gap-4 transition-all"
+                                >
+                                  Book This Service <ArrowUpRight className="w-4 h-4" />
+                                </button>
+                              )}
+                           </div>
+                         ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                        <p className="text-white/20 font-black uppercase tracking-widest text-[10px]">No skills listed in the menu yet.</p>
+                      </div>
+                    )}
+                 </div>
               </div>
             </div>
 
@@ -303,13 +445,15 @@ export default function ProviderPage() {
                   </div>
                 </div>
                 
-                <button
-                  onClick={handleBookNow}
-                  className="w-full btn-secondary !rounded-[1.5rem] md:!rounded-[2rem] !py-6 md:!py-7 !text-sm md:!text-base !shadow-[0_20px_50px_-5px_rgba(251,191,36,0.3)] mb-6 transition-all hover:scale-[1.05]"
-                >
-                  <Calendar className="w-5 h-5 md:w-6 md:h-6" />
-                  Initiate Booking
-                </button>
+                {!isOwner && (
+                  <button
+                    onClick={handleBookNow}
+                    className="w-full btn-secondary !rounded-[1.5rem] md:!rounded-[2rem] !py-6 md:!py-7 !text-sm md:!text-base !shadow-[0_20px_50px_-5px_rgba(251,191,36,0.3)] mb-6 transition-all hover:scale-[1.05]"
+                  >
+                    <Calendar className="w-5 h-5 md:w-6 md:h-6" />
+                    Initiate Booking
+                  </button>
+                )}
 
                 <div className="grid grid-cols-2 gap-3 md:gap-4 mb-10 md:mb-12">
                   <a
@@ -409,13 +553,13 @@ export default function ProviderPage() {
                     <div className="relative group">
                        <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 pointer-events-none group-hover:text-secondary transition-all" />
                         <select 
-                          value={selectedService}
-                          onChange={(e) => setSelectedService(e.target.value)}
+                          value={selectedService ? selectedService.id : ""}
+                          onChange={(e) => setSelectedService(services.find(s => s.id === parseInt(e.target.value)))}
                           className="w-full px-6 md:px-8 py-5 md:py-6 bg-white/5 border-none rounded-[1.5rem] md:rounded-[2rem] text-white font-black uppercase tracking-widest text-[10px] md:text-xs focus:ring-2 focus:ring-secondary/20 appearance-none cursor-pointer"
                         >
                           <option value="" className="bg-slate-900">Select Mission Service</option>
-                          {skills.map((skill: string) => (
-                            <option key={skill} value={skill} className="bg-slate-900">{skill}</option>
+                          {services.map((service: any) => (
+                            <option key={service.id} value={service.id} className="bg-slate-900">{service.name} (Rs. {service.price})</option>
                           ))}
                         </select>
                     </div>
@@ -426,8 +570,8 @@ export default function ProviderPage() {
                       Mission Directives
                     </label>
                     <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      value={bookingData.notes}
+                      onChange={(e) => setBookingData({...bookingData, notes: e.target.value})}
                       placeholder="Specify requirements..."
                       className="w-full px-6 md:px-8 py-5 md:py-6 bg-white/5 border-none rounded-[1.5rem] md:rounded-[2.5rem] text-white font-bold text-base md:text-lg focus:ring-2 focus:ring-secondary/20 h-32 md:h-40 resize-none placeholder:text-white/10"
                     />
@@ -453,8 +597,8 @@ export default function ProviderPage() {
                       </label>
                       <input
                         type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
+                        value={bookingData.date}
+                        onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
                         min={new Date().toISOString().split('T')[0]}
                         className="w-full px-6 md:px-8 py-5 md:py-6 bg-white/5 border-none rounded-[1.5rem] md:rounded-[2rem] text-white font-black text-xs md:text-sm focus:ring-2 focus:ring-secondary/20 invert-[0.9]"
                       />
@@ -466,8 +610,8 @@ export default function ProviderPage() {
                       <div className="relative group">
                         <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 pointer-events-none" />
                         <select 
-                          value={selectedTime}
-                          onChange={(e) => setSelectedTime(e.target.value)}
+                          value={bookingData.time}
+                          onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
                           className="w-full px-6 md:px-8 py-5 md:py-6 bg-white/5 border-none rounded-[1.5rem] md:rounded-[2rem] text-white font-black uppercase tracking-widest text-[10px] md:text-xs focus:ring-2 focus:ring-secondary/20 appearance-none cursor-pointer"
                         >
                           <option value="" className="bg-slate-900">Select Hour</option>
@@ -482,8 +626,8 @@ export default function ProviderPage() {
                       Target Coordinates (Address)
                     </label>
                     <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      value={bookingData.address}
+                      onChange={(e) => setBookingData({...bookingData, address: e.target.value})}
                       placeholder="Street, House, Landmarks..."
                       className="w-full px-6 md:px-8 py-5 md:py-6 bg-white/5 border-none rounded-[1.5rem] md:rounded-[2.5rem] text-white font-bold text-base md:text-lg focus:ring-2 focus:ring-secondary/20 h-24 md:h-32 resize-none placeholder:text-white/10"
                     />
@@ -498,7 +642,7 @@ export default function ProviderPage() {
                     </button>
                     <button
                       onClick={handleConfirmBooking}
-                      disabled={!selectedDate || !selectedTime || !address || bookingLoading}
+                      disabled={!bookingData.date || !bookingData.time || !bookingData.address || bookingLoading}
                       className="order-1 sm:order-2 flex-[2] btn-secondary !rounded-[1.5rem] md:!rounded-[2.5rem] !py-5 md:!py-7 shadow-2xl disabled:opacity-20 transition-all"
                     >
                       {bookingLoading ? <Loader2 className="w-5 md:w-6 h-5 md:h-6 animate-spin" /> : <CheckCircle className="w-5 md:w-6 h-5 md:h-6" />}
@@ -508,6 +652,91 @@ export default function ProviderPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service CRUD Modal */}
+      {isEditingService && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center z-[110] p-4 animate-reveal">
+          <div className="bg-slate-900 rounded-[2.5rem] md:rounded-[4rem] max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-white/10 p-8 md:p-16">
+            <div className="flex justify-between items-center mb-12">
+               <div>
+                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">{serviceEditingId ? 'Refine Skill' : 'Deploy New Skill'}</h2>
+                  <p className="text-white/30 text-[10px] font-black uppercase tracking-widest mt-2">Manage your professional catalog</p>
+               </div>
+               <button onClick={() => setIsEditingService(false)} className="text-white/20 hover:text-white transition-colors">
+                  <XCircle className="w-8 h-8" />
+               </button>
+            </div>
+
+            <form onSubmit={handleServiceSubmit} className="space-y-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-4">Service Name (English)</label>
+                    <input 
+                      required
+                      className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white focus:ring-2 focus:ring-secondary/20 outline-none"
+                      value={serviceFormData.name}
+                      onChange={(e) => setServiceFormData({...serviceFormData, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-4 text-right block">نام (اردو)</label>
+                    <input 
+                      dir="rtl"
+                      className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white font-urdu text-lg focus:ring-2 focus:ring-secondary/20 outline-none"
+                      value={serviceFormData.name_urdu}
+                      onChange={(e) => setServiceFormData({...serviceFormData, name_urdu: e.target.value})}
+                    />
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-4">Price (PKR)</label>
+                    <input 
+                      type="number"
+                      required
+                      className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white focus:ring-2 focus:ring-secondary/20 outline-none"
+                      value={serviceFormData.price}
+                      onChange={(e) => setServiceFormData({...serviceFormData, price: parseFloat(e.target.value)})}
+                    />
+                  </div>
+                  <div className="flex items-center gap-4 pt-6">
+                    <button 
+                      type="button"
+                      onClick={() => setServiceFormData({...serviceFormData, is_negotiable: !serviceFormData.is_negotiable})}
+                      className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] border transition-all ${serviceFormData.is_negotiable ? 'bg-secondary/10 border-secondary text-secondary' : 'bg-white/5 border-white/5 text-white/20'}`}
+                    >
+                      Negotiable Price
+                    </button>
+                  </div>
+               </div>
+
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-4">Detailed Intel</label>
+                  <textarea 
+                    className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white focus:ring-2 focus:ring-secondary/20 h-32 resize-none outline-none"
+                    value={serviceFormData.description}
+                    onChange={(e) => setServiceFormData({...serviceFormData, description: e.target.value})}
+                  />
+               </div>
+
+               <div className="flex gap-4 pt-6">
+                  <button type="submit" className="flex-1 bg-secondary text-slate-950 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                     <Save className="w-5 h-5" />
+                     {serviceEditingId ? 'Update Registry' : 'Deploy Skill'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditingService(false)}
+                    className="px-8 bg-white/5 text-white/40 rounded-2xl font-black uppercase tracking-widest text-xs"
+                  >
+                    Abort
+                  </button>
+               </div>
+            </form>
           </div>
         </div>
       )}

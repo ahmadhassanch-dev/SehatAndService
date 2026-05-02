@@ -101,6 +101,7 @@ class ApiClient {
   // Bookings
   async createBooking(data: {
     provider_id: number;
+    service_id?: number;
     service: string;
     description?: string;
     scheduled_date?: string;
@@ -174,16 +175,12 @@ class ApiClient {
   }
 
   // Dashboard
-  async getCustomerDashboard(userId?: number) {
-    return this.request<any>("/dashboard/customer", {
-      params: { user_id: userId },
-    });
+  async getCustomerDashboard() {
+    return this.request<any>("/dashboard/customer");
   }
 
-  async getProviderDashboard(userId?: number) {
-    return this.request<any>("/dashboard/provider", {
-      params: { user_id: userId },
-    });
+  async getProviderDashboard() {
+    return this.request<any>("/dashboard/provider");
   }
 
   async getAdminDashboard() {

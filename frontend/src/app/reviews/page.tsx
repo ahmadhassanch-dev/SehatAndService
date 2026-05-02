@@ -77,6 +77,14 @@ const ratingBreakdown = [
 ];
 
 export default function ReviewsPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <ReviewsContent />
+    </React.Suspense>
+  );
+}
+
+function ReviewsContent() {
   const searchParams = useSearchParams();
   const providerId = searchParams.get("provider");
   const { language, t } = useLanguage();

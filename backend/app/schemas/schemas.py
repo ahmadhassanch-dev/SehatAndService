@@ -83,10 +83,14 @@ class TokenResponse(BaseModel):
 
 class ProviderServiceBase(BaseModel):
     name: str = Field(..., min_length=2)
+    name_urdu: Optional[str] = None
     description: Optional[str] = None
+    description_urdu: Optional[str] = None
     price: float = Field(..., gt=0)
+    is_negotiable: bool = True
     duration_minutes: Optional[int] = None
     category: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class ProviderServiceCreate(ProviderServiceBase):
@@ -95,16 +99,22 @@ class ProviderServiceCreate(ProviderServiceBase):
 
 class ProviderServiceUpdate(BaseModel):
     name: Optional[str] = None
+    name_urdu: Optional[str] = None
     description: Optional[str] = None
+    description_urdu: Optional[str] = None
     price: Optional[float] = None
+    is_negotiable: Optional[bool] = None
     duration_minutes: Optional[int] = None
     category: Optional[str] = None
+    image_url: Optional[str] = None
+    status: Optional[str] = None
     is_active: Optional[bool] = None
 
 
 class ProviderServiceResponse(ProviderServiceBase):
     id: int
     provider_id: int
+    status: str
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -125,6 +135,18 @@ class ProviderBase(BaseModel):
     price_min: float = 0
     price_max: float = 0
     response_time: Optional[str] = None
+    
+    # Business Info
+    business_name: Optional[str] = None
+    business_reg_number: Optional[str] = None
+    cnic: Optional[str] = None
+    
+    # Financial Info
+    bank_name: Optional[str] = None
+    account_holder: Optional[str] = None
+    account_number: Optional[str] = None
+    jazzcash_number: Optional[str] = None
+    easypaisa_number: Optional[str] = None
 
 
 class ProviderCreate(ProviderBase):
@@ -143,6 +165,19 @@ class ProviderUpdate(BaseModel):
     response_time: Optional[str] = None
     availability: Optional[str] = None
     cnic: Optional[str] = None
+    
+    # Business Info
+    business_name: Optional[str] = None
+    business_reg_number: Optional[str] = None
+    
+    # Financial Info
+    bank_name: Optional[str] = None
+    account_holder: Optional[str] = None
+    account_number: Optional[str] = None
+    jazzcash_number: Optional[str] = None
+    easypaisa_number: Optional[str] = None
+    
+    status: Optional[str] = None
 
 
 class ProviderResponse(ProviderBase):
@@ -152,6 +187,7 @@ class ProviderResponse(ProviderBase):
     review_count: int
     verified: bool
     is_approved: bool
+    status: str
     availability: Optional[str] = None
     created_at: datetime
     user: Optional[UserResponse] = None
@@ -342,6 +378,7 @@ class CustomerDashboard(BaseModel):
 
 
 class ProviderDashboard(BaseModel):
+    provider_id: int
     pending_bookings: List[BookingResponse]
     accepted_bookings: List[BookingResponse]
     completed_bookings: List[BookingResponse]
