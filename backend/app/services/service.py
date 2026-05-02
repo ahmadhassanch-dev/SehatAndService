@@ -16,11 +16,25 @@ MOCK_OTPS = {}
 
 # ================== Provider Services ==================
 
+async def _update_provider_pricing_range(db: AsyncSession, provider_id: int):
+    """Internal helper to sync Provider price range with their active services"""
+    result = await db.execute(
+        select(func.min(ProviderService.price), func.max(ProviderService.price))
+        .where(ProviderService.provider_id == provider_id, ProviderService.is_active == True)
+    )
+    min_p, max_p = result.first()
+    if min_p is not None:
+        await db.execute(
+            update(Provider).where(Provider.id == provider_id).values(price_min=min_p, price_max=max_p)
+        )
+        await db.commit()
+
 async def create_provider_service(db: AsyncSession, provider_id: int, service_data: ProviderServiceCreate) -> ProviderService:
     service = ProviderService(provider_id=provider_id, **service_data.dict())
     db.add(service)
     await db.commit()
     await db.refresh(service)
+    await _update_provider_pricing_range(db, provider_id)
     return service
 
 async def get_provider_services(db: AsyncSession, provider_id: int) -> List[ProviderService]:
@@ -31,12 +45,18 @@ async def update_provider_service(db: AsyncSession, service_id: int, service_upd
     stmt = update(ProviderService).where(ProviderService.id == service_id).values(**service_update.dict(exclude_unset=True))
     await db.execute(stmt)
     await db.commit()
-    return await db.get(ProviderService, service_id)
+    service = await db.get(ProviderService, service_id)
+    if service:
+        await _update_provider_pricing_range(db, service.provider_id)
+    return service
 
 async def delete_provider_service(db: AsyncSession, service_id: int):
-    stmt = update(ProviderService).where(ProviderService.id == service_id).values(is_active=False)
-    await db.execute(stmt)
-    await db.commit()
+    service = await db.get(ProviderService, service_id)
+    if service:
+        stmt = update(ProviderService).where(ProviderService.id == service_id).values(is_active=False)
+        await db.execute(stmt)
+        await db.commit()
+        await _update_provider_pricing_range(db, service.provider_id)
 
 # ================== User Services ==================
 
@@ -175,7 +195,10 @@ async def get_providers(
 async def get_provider_by_id(db: AsyncSession, provider_id: int) -> Optional[Provider]:
     result = await db.execute(
         select(Provider)
-        .options(selectinload(Provider.user))
+        .options(
+            selectinload(Provider.user),
+            selectinload(Provider.services)
+        )
         .where(Provider.id == provider_id)
     )
     return result.scalar_one_or_none()
@@ -204,40 +227,84 @@ async def search_providers(
 ) -> dict:
     query_str = query.lower()
     
-    # Basic natural language mapping
-    category_mapping = {
-        "ac": "ac-repair",
-        "plumb": "plumbing",
-        "electr": "electrician",
-        "carpent": "carpenter",
-        "wash": "appliance-repair",
-        "clean": "cleaning",
-        "move": "moving",
-        "tutor": "tutoring",
-        "beauty": "beauty",
-        "tech": "tech-help",
-    }
+    # 1. Check for keyword matches in Service Names/Descriptions
+    service_match_ids = []
+    if len(query_str) > 2:
+        svc_result = await db.execute(
+            select(ProviderService.provider_id)
+            .where(
+                (ProviderService.name.ilike(f"%{query_str}%")) | 
+                (ProviderService.description.ilike(f"%{query_str}%")) |
+                (ProviderService.name_urdu.ilike(f"%{query_str}%"))
+            )
+        )
+        service_match_ids = [r[0] for r in svc_result.all()]
+
+    # 2. Build the main Provider query
+    base_query = select(Provider).options(selectinload(Provider.user))
     
-    detected_category = category
-    if not detected_category:
-        for key, cat in category_mapping.items():
-            if key in query_str:
-                detected_category = cat
-                break
-                
-    return await get_providers(
-        db, 
-        category=detected_category, 
-        city=city, 
-        min_rating=min_rating, 
-        verified_only=verified_only,
-        page=page,
-        limit=limit
-    )
+    # Filters
+    filters = []
+    if category:
+        filters.append(Provider.category == category)
+    if city:
+        base_query = base_query.join(User)
+        filters.append(User.city == city)
+    if min_rating:
+        filters.append(Provider.rating >= min_rating)
+    if verified_only:
+        filters.append(Provider.verified == True)
+    if min_price:
+        filters.append(Provider.price_min >= min_price)
+    if max_price:
+        filters.append(Provider.price_max <= max_price)
+
+    # Keyword search filter
+    if query_str and not category:
+        # Check bio, skills, AND the service_match_ids found earlier
+        filters.append(
+            (Provider.bio.ilike(f"%{query_str}%")) | 
+            (Provider.skills.ilike(f"%{query_str}%")) |
+            (Provider.category.ilike(f"%{query_str}%")) |
+            (Provider.id.in_(service_match_ids))
+        )
+    
+    if filters:
+        base_query = base_query.where(*filters)
+        
+    base_query = base_query.order_by(Provider.rating.desc())
+    
+    # Total count
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = (await db.execute(count_query)).scalar() or 0
+    
+    # Pagination
+    base_query = base_query.offset((page - 1) * limit).limit(limit)
+    result = await db.execute(base_query)
+    providers = result.scalars().all()
+    
+    if not providers and page == 1 and not query_str:
+        return await _get_mock_providers(category, city, min_rating, verified_only, "rating", limit)
+
+    return {
+        "providers": providers,
+        "total": total,
+        "page": page,
+        "total_pages": (total + limit - 1) // limit
+    }
 
 # ================== Booking Services ==================
 
 async def create_booking(db: AsyncSession, booking_data: dict) -> Booking:
+    # If service_id is provided, verify it belongs to the provider and get price
+    if booking_data.get("service_id"):
+        svc = await db.get(ProviderService, booking_data["service_id"])
+        if svc and svc.provider_id == booking_data["provider_id"]:
+            booking_data["price"] = svc.price
+            booking_data["estimated_price"] = svc.price
+            if not booking_data.get("service"):
+                booking_data["service"] = svc.name
+
     booking = Booking(**booking_data)
     db.add(booking)
     await db.commit()
@@ -247,7 +314,8 @@ async def create_booking(db: AsyncSession, booking_data: dict) -> Booking:
         select(Booking)
         .options(
             selectinload(Booking.customer),
-            selectinload(Booking.provider).selectinload(Provider.user)
+            selectinload(Booking.provider).selectinload(Provider.user),
+            selectinload(Booking.provider_service)
         )
         .where(Booking.id == booking.id)
     )

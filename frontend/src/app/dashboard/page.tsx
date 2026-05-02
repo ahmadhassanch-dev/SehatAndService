@@ -96,6 +96,7 @@ export default function DashboardPage() {
       }
       setIsAddingService(false);
       setEditingServiceId(null);
+      alert(editingServiceId ? "Service updated." : "New service listing published.");
       setServiceFormData({
         name: "", name_urdu: "", description: "", description_urdu: "",
         price: 0, is_negotiable: true, category: "", image_url: "", duration_minutes: 60
@@ -105,6 +106,7 @@ export default function DashboardPage() {
       setServices(svcData);
     } catch (err) {
       console.error("Error saving service", err);
+      alert("Failed to synchronize listing with the registry.");
     }
   };
 
@@ -122,9 +124,14 @@ export default function DashboardPage() {
 
   const handleDeleteService = async (id: number) => {
     if (confirm("Delete this service permanently?")) {
-      await api_ext.deleteProviderService(id);
-      const svcData = await api_ext.getProviderServices();
-      setServices(svcData);
+      try {
+        await api_ext.deleteProviderService(id);
+        const svcData = await api_ext.getProviderServices();
+        setServices(svcData);
+        alert("Listing decommissioned.");
+      } catch (err) {
+        console.error("Delete failed", err);
+      }
     }
   };
 

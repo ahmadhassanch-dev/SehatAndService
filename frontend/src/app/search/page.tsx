@@ -63,12 +63,11 @@ function SearchContent() {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const response = await api.getProviders({
-          category: query,
-          city: selectedCity,
+        const response = await api.searchProviders({
+          query: query,
+          city: selectedCity || undefined,
           min_rating: minRating || undefined,
           verified_only: verifiedOnly,
-          sort_by: sortBy,
         });
         setResults(response.providers);
         setTotal(response.total);
@@ -80,7 +79,7 @@ function SearchContent() {
     };
 
     fetchResults();
-  }, [query, selectedCity, sortBy, minRating, verifiedOnly]);
+  }, [query, selectedCity, minRating, verifiedOnly]);
 
   const handleSearchSubmit = (e?: React.FormEvent, term?: string) => {
     if (e) e.preventDefault();

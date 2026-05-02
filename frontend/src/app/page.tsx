@@ -283,6 +283,69 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Elite Operational Protocol (How It Works) */}
+      <section className="py-16 md:py-40 bg-slate-950 relative border-y border-white/5 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.03)_0,transparent_70%)]"></div>
+        
+        <div className="container-custom relative z-10">
+          <div className="text-center mb-20 md:mb-32 animate-reveal">
+            <h2 className="text-3xl md:text-6xl font-black text-white mb-6 tracking-tighter">
+               The <span className="text-secondary italic">Elite</span> Protocol.
+            </h2>
+            <p className="text-white/30 text-[10px] md:text-xs font-black uppercase tracking-[0.4em]">Simplicity Refined. Excellence Delivered in 3 Steps.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-24 px-4 relative">
+            <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-y-1/2"></div>
+            
+            {[
+              { 
+                step: "01", 
+                title: "Identify Objective", 
+                desc: "Navigate our elite guild to find the exact skill-set your household requires. Use AI-search for instant precision.",
+                icon: Search,
+                label: "Scan"
+              },
+              { 
+                step: "02", 
+                title: "Deploy Expert", 
+                desc: "Establish a direct mission directive with your chosen professional. Schedule slots that sync with your lifestyle.",
+                icon: Zap,
+                label: "Dispatch"
+              },
+              { 
+                step: "03", 
+                title: "Confirm Excellence", 
+                desc: "Experience the pinnacle of service quality. Secured payments and guild-verified results for ultimate peace of mind.",
+                icon: ShieldCheck,
+                label: "Resolve"
+              }
+            ].map((item, i) => (
+              <div key={i} className="relative group animate-reveal" style={{ animationDelay: `${i * 0.2}s` }}>
+                <div className="absolute -top-12 md:-top-20 left-1/2 -translate-x-1/2 text-9xl font-black text-white/[0.02] group-hover:text-secondary/[0.03] transition-colors">
+                  {item.step}
+                </div>
+                
+                <div className="bg-slate-900/50 rounded-[3rem] p-10 md:p-14 border border-white/5 hover:border-secondary/20 transition-all duration-700 relative z-10 backdrop-blur-xl group-hover:-translate-y-4 shadow-2xl">
+                   <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8 border border-white/10 group-hover:bg-secondary group-hover:border-secondary transition-all duration-500 mx-auto md:mx-0">
+                      <item.icon className="w-8 h-8 text-white group-hover:text-slate-950 transition-colors" />
+                   </div>
+                   
+                   <span className="text-[9px] font-black text-secondary uppercase tracking-[0.3em] mb-4 block text-center md:text-left">{item.label} Protocol</span>
+                   <h3 className="text-2xl md:text-3xl font-black text-white mb-6 tracking-tight text-center md:text-left">{item.title}</h3>
+                   <p className="text-white/40 text-sm md:text-base leading-relaxed font-medium text-center md:text-left">{item.desc}</p>
+                   
+                   <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-center md:justify-start gap-4">
+                      <div className="w-2 h-2 rounded-full bg-secondary"></div>
+                      <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Priority Phase {item.step}</span>
+                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Elite Providers Showcase */}
       <section className="py-16 md:py-32 bg-slate-900/50 relative border-y border-white/5">
         <div className="container-custom">

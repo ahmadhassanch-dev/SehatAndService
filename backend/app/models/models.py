@@ -25,7 +25,7 @@ class ProviderService(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationship
-    provider = relationship("Provider")
+    provider = relationship("Provider", back_populates="services")
 
 
 class UserRole(str, enum.Enum):
@@ -105,6 +105,7 @@ class Provider(Base):
     user = relationship("User", back_populates="provider_profile")
     bookings = relationship("Booking", back_populates="provider")
     reviews = relationship("Review", back_populates="provider")
+    services = relationship("ProviderService", back_populates="provider")
 
 
 class Booking(Base):
@@ -113,6 +114,7 @@ class Booking(Base):
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("users.id"))
     provider_id = Column(Integer, ForeignKey("providers.id"))
+    service_id = Column(Integer, ForeignKey("provider_services.id"), nullable=True)
     service = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     status = Column(String(20), default=BookingStatus.PENDING.value)
@@ -129,6 +131,7 @@ class Booking(Base):
     # Relationships
     customer = relationship("User", back_populates="bookings", foreign_keys=[customer_id])
     provider = relationship("Provider", back_populates="bookings")
+    provider_service = relationship("ProviderService")
     reviews = relationship("Review", back_populates="booking")
     chats = relationship("Chat", back_populates="booking")
 

@@ -128,9 +128,11 @@ export default function ProviderPage() {
         await api_ext.createProviderService(serviceFormData);
       }
       setIsEditingService(false);
+      alert(serviceEditingId ? "Skill refined successfully." : "New skill deployed to your catalog.");
       fetchProviderData();
     } catch (error) {
       console.error("Save failed:", error);
+      alert("Operational failure: Could not update catalog.");
     }
   };
 

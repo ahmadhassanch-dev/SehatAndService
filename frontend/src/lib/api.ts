@@ -91,10 +91,20 @@ class ApiClient {
   }
 
   // Search
-  async searchProviders(query: string, category?: string, city?: string) {
+  async searchProviders(filters: {
+    query: string;
+    category?: string;
+    city?: string;
+    min_price?: number;
+    max_price?: number;
+    min_rating?: number;
+    verified_only?: boolean;
+    page?: number;
+    limit?: number;
+  }) {
     return this.request<any>("/search", {
       method: "POST",
-      body: JSON.stringify({ query, category, city }),
+      body: JSON.stringify(filters),
     });
   }
 

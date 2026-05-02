@@ -117,18 +117,9 @@ async def create_booking(
     current_user: User = Depends(get_any_user)
 ):
     """Create a new booking (Available to both Customers and Providers)"""
-    booking_data = {
-        "customer_id": current_user.id,
-        "provider_id": booking.provider_id,
-        "service": booking.service,
-        "description": booking.description,
-        "scheduled_date": booking.scheduled_date,
-        "scheduled_time": booking.scheduled_time,
-        "address": booking.address,
-        "city": booking.city,
-        "notes": booking.notes,
-        "estimated_price": 0
-    }
+    booking_data = booking.dict()
+    booking_data["customer_id"] = current_user.id
+    
     result = await service.create_booking(db, booking_data)
     return result
 
