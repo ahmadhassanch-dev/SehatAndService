@@ -1,263 +1,184 @@
-# Advanced Booking System - Implementation Guide
+# Sehat & Service - Implementation Guide
 
 **Version**: 1.0  
-**Status**: Production Ready  
-**Last Updated**: May 7, 2026
+**Status**: Local development ready  
+**Last Updated**: May 9, 2026
 
 ---
 
-## 📂 PROJECT STRUCTURE
+## What this guide covers
+
+This file explains how to run the project locally, describes the backend and frontend architecture, and lists the main implementation details.
+
+## Repository layout
 
 ```
 patanai/
-├── README.md                           # Project overview
-├── SPEC.md                             # Requirements specification
-├── ADVANCED_BOOKING_SYSTEM.md         # Feature documentation
-├── QUICK_REFERENCE.md                  # Database & API reference
-├── TEST_REPORT.md                      # Test results & validation
-├── IMPLEMENTATION_GUIDE.md             # This file
-├── replace_colors.py                   # Utility script
-├── vercel.json                         # Deployment config
-│
-├── backend/
-│   ├── requirements.txt                # Python dependencies
-│   ├── main.py                         # Entry point
-│   ├── reset_db.py                     # Database initialization
-│   ├── super_seed.py                   # Seed test data
-│   ├── test_advanced_booking.py        # Comprehensive tests
-│   ├── test_api_endpoints.py           # API endpoint tests
-│   ├── test_api_quick.py               # Quick tests
-│   ├── test_flow.py                    # Workflow tests
-│   ├── test_role_system.py             # Role tests
-│   ├── test_system_full.py             # System tests
-│   ├── check_api.py                    # API health check
-│   ├── repair_data.py                  # Data repair utility
-│   ├── add_provider.py                 # Provider management
-│   │
+├── backend/         # FastAPI backend
+│   ├── requirements.txt
+│   ├── add_provider.py
+│   ├── check_api.py
+│   ├── repair_data.py
+│   ├── reset_db.py
+│   ├── super_seed.py
+│   ├── test_advanced_booking.py
+│   ├── test_api_endpoints.py
+│   ├── test_api_quick.py
+│   ├── test_flow.py
+│   ├── test_role_system.py
+│   ├── test_system_full.py
 │   └── app/
 │       ├── __init__.py
-│       ├── main.py                     # FastAPI app initialization
+│       ├── main.py
 │       ├── api/
 │       │   ├── __init__.py
-│       │   ├── deps.py                 # Dependency injection
+│       │   ├── deps.py
 │       │   └── v1/
-│       │       ├── router.py           # API routes configuration
-│       │       └── endpoints/
-│       │           ├── __init__.py
-│       │           └── main.py         # 13 endpoints ✅
-│       │
+│       │       ├── router.py
+│       │       └── endpoints/main.py
 │       ├── core/
-│       │   ├── config.py               # Configuration
-│       │   ├── database.py             # Database connection
-│       │   └── security.py             # JWT & security
-│       │
-│       ├── models/
-│       │   └── models.py               # 9 SQLAlchemy models ✅
-│       │
-│       ├── schemas/
-│       │   └── schemas.py              # 20+ Pydantic schemas ✅
-│       │
-│       └── services/
-│           ├── __init__.py
-│           └── service.py              # 20+ business logic functions ✅
-│
-└── frontend/
-    ├── package.json                    # Node dependencies
-    ├── tsconfig.json                   # TypeScript config
-    ├── tailwind.config.ts              # Tailwind styles
-    ├── next.config.js                  # Next.js config
-    │
-    ├── src/
-    │   ├── app/
-    │   │   ├── globals.css
-    │   │   ├── layout.tsx
-    │   │   ├── page.tsx
-    │   │   ├── admin/
-    │   │   │   └── page.tsx
-    │   │   ├── about/
-    │   │   ├── auth/
-    │   │   ├── booking/
-    │   │   ├── chat/
-    │   │   ├── contact/
-    │   │   ├── dashboard/
-    │   │   ├── faq/
-    │   │   ├── provider/
-    │   │   │   ├── [id]/
-    │   │   │   │   └── page.tsx         # Provider profile + booking modal ✅
-    │   │   │   ├── dashboard/
-    │   │   │   │   └── services/
-    │   │   │   └── onboarding/
-    │   │   ├── reviews/
-    │   │   ├── search/
-    │   │   └── services/
-    │   │
-    │   ├── components/
-    │   │   ├── Navbar.tsx
-    │   │   └── Footer.tsx
-    │   │
-    │   ├── contexts/
-    │   │   ├── AuthContext.tsx          # User authentication state
-    │   │   └── LanguageContext.tsx      # Language support (EN/UR)
-    │   │
-    │   └── lib/
-    │       ├── api.ts                   # Base API functions
-    │       └── api_extensions.ts        # Extended API functions
-    │
-    └── public/
+│       │   ├── config.py
+│       │   ├── database.py
+│       │   └── security.py
+│       ├── models/models.py
+│       ├── schemas/schemas.py
+│       └── services/service.py
+├── frontend/        # Next.js frontend
+│   ├── package.json
+│   ├── next.config.js
+│   ├── postcss.config.js
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   ├── next-env.d.ts
+│   ├── app/
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── about/page.tsx
+│   │   ├── admin/page.tsx
+│   │   ├── auth/login/page.tsx
+│   │   ├── auth/signup/page.tsx
+│   │   ├── booking/[id]/page.tsx
+│   │   ├── chat/page.tsx
+│   │   ├── contact/page.tsx
+│   │   ├── dashboard/page.tsx
+│   │   ├── faq/page.tsx
+│   │   ├── provider/[id]/page.tsx
+│   │   ├── provider/dashboard/services/page.tsx
+│   │   ├── provider/onboarding/page.tsx
+│   │   ├── reviews/page.tsx
+│   │   ├── search/page.tsx
+│   │   ├── services/page.tsx
+│   │   └── services/[category]/page.tsx
+│   ├── components/
+│   │   ├── Footer.tsx
+│   │   └── Navbar.tsx
+│   ├── contexts/
+│   │   ├── AuthContext.tsx
+│   │   └── LanguageContext.tsx
+│   └── lib/
+│       ├── api.ts
+│       └── api_extensions.ts
+├── README.md
+├── SPEC.md
+├── QUICK_REFERENCE.md
+├── ADVANCED_BOOKING_SYSTEM.md
+├── TEST_REPORT.md
+├── DELIVERY_SUMMARY.md
+└── DOCUMENTATION_INDEX.md
 ```
 
 ---
 
-## 🔌 BACKEND IMPLEMENTATION
+## Backend architecture
 
-### 1. Database Models (`backend/app/models/models.py`)
+### Core components
+- `backend/app/main.py` — FastAPI app entrypoint
+- `backend/app/core/config.py` — Settings and environment config
+- `backend/app/core/database.py` — Async database engine and session
+- `backend/app/core/security.py` — JWT, password hashing, OTP utilities
+- `backend/app/models/models.py` — SQLAlchemy ORM models
+- `backend/app/schemas/schemas.py` — Pydantic request/response schemas
+- `backend/app/services/service.py` — Business logic and workflows
+- `backend/app/api/v1/endpoints/main.py` — API route definitions
+- `backend/app/api/deps.py` — Dependency helpers and role checks
 
-**9 Core Models**:
+### Running backend
 
-```python
-# 1. User Model
-- id, name, phone, email, password_hash, role, city
-- city, address, language, wallet_balance
-- Relations: Provider (1-to-1), Bookings (1-to-many), Locations
+From the repository root:
 
-# 2. Provider Model  
-- user_id (FK), category, bio, skills (JSON)
-- price_min, price_max, rating, reviews
-- payment_accounts (bank, jazzcash, easypaisa)
-- Relations: Services, Schedules, Bookings, Reviews
-
-# 3. Location Model
-- user_id (FK), latitude, longitude, address, city, area
-- Relations: User (many-to-1)
-
-# 4. Booking Model
-- customer_id, provider_id (FKs), service, description
-- status (ENUM), scheduled_date, scheduled_time
-- address, city, latitude, longitude
-- price, verification_code
-- Relations: Payments, Reviews, Chat, Slots
-
-# 5. PaymentTransaction Model
-- booking_id (FK), amount, method (ENUM), status (ENUM)
-- transaction_id, payment_data (JSON)
-- Relations: Booking (many-to-1)
-
-# 6. Notification Model
-- user_id, booking_id (FKs), type (ENUM)
-- title, message, data (JSON), is_read
-- Relations: User, Booking
-
-# 7. ProviderSchedule Model
-- provider_id (FK), day_of_week (0-6)
-- start_time, end_time, max_bookings
-- Relations: Provider (many-to-1)
-
-# 8. BookingSlot Model
-- provider_id, date, start_time, end_time
-- is_booked, booking_id (FK, nullable)
-- Relations: Provider, Booking
-
-# 9. ProviderOnlineStatus Model
-- provider_id (FK, unique), status (ENUM)
-- latitude, longitude, last_seen
-- is_available_for_booking
-- Relations: Provider (1-to-1)
+```bash
+cd backend
+venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn app.main:app --app-dir backend --reload
 ```
 
-**4 Core Enums**:
-- `BookingStatus` (REQUESTED, PENDING, ACCEPTED, ON_WAY, IN_PROGRESS, COMPLETED, CANCELLED)
-- `UserRole` (CUSTOMER, PROVIDER, ADMIN)
-- `PaymentMethod` (CASH, ONLINE, WALLET, BANK_TRANSFER, JAZZCASH, EASYPAISA)
-- `NotificationType` (BOOKING_REQUEST, BOOKING_ACCEPTED, PROVIDER_ON_WAY, SERVICE_COMPLETED, etc.)
+### Notes
+- Use `--app-dir backend` when running from the repo root.
+- The backend generates OTP codes and currently returns them in the response for local testing.
+- Real user persistence is not fully implemented in the current MVP.
 
 ---
 
-### 2. API Schemas (`backend/app/schemas/schemas.py`)
+## Frontend architecture
 
-**20+ Pydantic Schemas**:
+### Core components
+- `frontend/src/app/` — Next.js pages and routing
+- `frontend/src/components/` — Reusable UI pieces
+- `frontend/src/contexts/` — Auth and language state
+- `frontend/src/lib/` — API utility functions
 
-```python
-# User Schemas
-UserCreate, UserResponse, UserUpdate, UserLogin
+### Running frontend
 
-# Provider Schemas
-ProviderCreate, ProviderResponse, ProviderUpdate
-
-# Location Schemas
-LocationCreate, LocationResponse, LocationList
-
-# Booking Schemas
-AdvancedBookingCreate, AdvancedBookingResponse, BookingDetailResponse
-BookingStatusUpdate
-
-# Payment Schemas
-PaymentTransactionCreate, PaymentTransactionResponse
-
-# Notification Schemas
-NotificationResponse, NotificationList
-
-# Search Schemas
-AdvancedSearchRequest, ProviderSearchResult, SearchResponse
-
-# Schedule Schemas
-ProviderScheduleCreate, ProviderScheduleResponse
-
-# Slot Schemas
-BookingSlotResponse
-
-# Status Schemas
-ProviderStatusUpdate, ProviderStatusResponse
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-**All schemas include**:
-- Input validation
-- Type checking
-- Required/optional fields
-- Example values for documentation
+Open `http://127.0.0.1:3000` in your browser.
+
+### Notes
+- The frontend expects the backend at `http://127.0.0.1:8000`.
+- Pages include booking, provider, chat, auth, dashboard, and admin.
 
 ---
 
-### 3. Service Layer (`backend/app/services/service.py`)
+## Testing
 
-**20+ Async Functions**:
+### Run tests
 
-```python
-# User Operations
-create_user(db, user_data)
-get_user_by_phone(db, phone)
-get_user_by_email(db, email)
-update_user(db, user_id, updates)
+```bash
+cd backend
+python -m pytest
+```
 
-# Location Management
-create_location(db, user_id, location_data)
-get_user_locations(db, user_id)
-delete_location(db, location_id)
+### Covered test files
+- `backend/test_advanced_booking.py`
+- `backend/test_api_endpoints.py`
+- `backend/test_api_quick.py`
+- `backend/test_flow.py`
+- `backend/test_role_system.py`
+- `backend/test_system_full.py`
 
-# Provider Operations
-get_provider_by_id(db, provider_id)
-get_providers_by_category(db, category)
-update_provider_rating(db, provider_id, new_rating)
+---
 
-# Advanced Search
-advanced_search_providers(db, search_request)
-  ├─ Distance calculation (Haversine formula)
-  ├─ Rating filtering
-  ├─ Price range filtering
-  ├─ Availability checking
-  └─ Sorting (distance, rating, price)
+## Current limitations
 
-# Booking Management
-create_advanced_booking(db, booking_data)
-get_booking_by_id(db, booking_id)
-get_booking_with_details(db, booking_id)
-  ├─ Customer details
-  ├─ Provider details
-  ├─ Payment transactions
-  ├─ Chat history
-  └─ Reviews
-update_booking_status(db, booking_id, new_status)
+- OTP flow is mocked for demo purposes.
+- User auth and persistent signup are still in MVP/demo state.
+- Notification delivery is simulated.
 
-# Notifications
+---
+
+## What is ready
+
+- Local backend startup
+- Basic API routes
+- Frontend page structure
+- Documentation coverage
+
 create_notification(db, notification_data)
 get_user_notifications(db, user_id)
 mark_notification_read(db, notification_id)

@@ -1,72 +1,58 @@
 # Sehat & Service (سیہت اینڈ سروس)
 
-A production-ready, mobile-first Pakistani hyperlocal services marketplace built with Next.js and FastAPI.
+A Pakistani hyperlocal services marketplace built with Next.js and FastAPI.
 
 ![Sehat & Service](https://img.shields.io/badge/Version-1.0.0-green)
 ![Next.js](https://img.shields.io/badge/Next.js-14-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-blue)
 
-## 🌟 Features
+## Project overview
 
-- **AI-Powered Search**: Natural language search like "AC not cooling" or "need plumber near me"
-- **Verified Providers**: Phone & CNIC verification system with trust badges
-- **Multi-Language Support**: Urdu + English UI with easy language toggle
-- **Mobile-First Design**: Optimized for low internet speeds in Pakistan
-- **Multiple Payment Methods**: Cash on Delivery, JazzCash, EasyPaisa
-- **WhatsApp Integration**: Direct chat with service providers
-- **Real-time Booking**: Track booking status from pending to completed
-- **Review System**: Star ratings and written reviews
-- **Admin Dashboard**: Complete platform management
+Sehat & Service connects customers with local providers for home repairs, cleaning, and professional services. This repository includes a frontend built in Next.js and a backend built in FastAPI.
 
-## 🛠️ Tech Stack
+> Note: The current OTP flow is implemented as a local demo. The backend returns the generated OTP in the response for development and testing.
+
+## Key features
+
+- Search providers by category, city, rating, and price
+- Provider profiles with reviews and ratings
+- Booking creation and status tracking
+- Provider availability and scheduling
+- In-app chat and notifications
+- Multi-language support (Urdu + English)
+- Demo OTP auth flow
+
+## Tech stack
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS
-- **State Management**: React Context + Zustand
-- **Language**: TypeScript
+- Next.js 14 (App Router)
+- Tailwind CSS
+- TypeScript
+- React Context
 
 ### Backend
-- **Framework**: FastAPI
-- **Database**: PostgreSQL (simulated for MVP)
-- **Authentication**: JWT + OTP
-- **Language**: Python
+- FastAPI
+- SQLAlchemy async ORM
+- Pydantic schemas
+- JWT + OTP auth structure
+- Python
 
-## 📱 Service Categories
+## Run locally
 
-1. AC Repair (اے سی مرمت)
-2. Plumbing (پلمبنگ)
-3. Electrician (الیکٹریشین)
-4. Carpenter (کارپینٹر)
-5. Appliance Repair (ایپلائنس مرمت)
-6. Cleaning (کلیننگ)
-7. Moving (موونگ)
-8. Tutoring (ٹیوشن)
-9. Beauty (بیوٹی)
-10. Tech Help (ٹیک ہیلپ)
-11. Home Security (ہوم سیکیورٹی)
-12. Other Services (دیگر خدمات)
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Python 3.9+
-- npm or yarn
-
-### Backend Setup
+### Backend
+From the repo root:
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --app-dir backend --reload
 ```
 
-The API will be available at `http://localhost:8000`
+The backend is available at `http://127.0.0.1:8000`.
 
-### Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
@@ -74,110 +60,54 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The frontend is available at `http://127.0.0.1:3000`.
 
-## 📄 API Endpoints
+## API summary
+
+### Authentication
+- `POST /api/v1/auth/otp/send`
+- `POST /api/v1/auth/otp/verify`
 
 ### Categories
-- `GET /api/v1/categories` - Get all service categories
-- `GET /api/v1/categories/{slug}` - Get category by slug
+- `GET /api/v1/categories`
+- `GET /api/v1/categories/{slug}`
 
 ### Providers
-- `GET /api/v1/providers` - Get providers with filters
-- `GET /api/v1/providers/{id}` - Get provider details
-- `GET /api/v1/providers/{id}/reviews` - Get provider reviews
+- `GET /api/v1/providers`
+- `GET /api/v1/providers/{id}`
+- `GET /api/v1/providers/{id}/reviews`
 
 ### Search
-- `POST /api/v1/search` - AI-powered provider search
+- `POST /api/v1/search`
 
 ### Bookings
-- `POST /api/v1/bookings` - Create new booking
-- `GET /api/v1/bookings` - Get user bookings
-- `PUT /api/v1/bookings/{id}` - Update booking status
-
-### Auth
-- `POST /api/v1/auth/otp/send` - Send OTP
-- `POST /api/v1/auth/otp/verify` - Verify OTP
+- `POST /api/v1/bookings`
+- `GET /api/v1/bookings`
+- `PUT /api/v1/bookings/{id}`
 
 ### Dashboard
-- `GET /api/v1/dashboard/customer` - Customer dashboard
-- `GET /api/v1/dashboard/provider` - Provider dashboard
-- `GET /api/v1/dashboard/admin` - Admin dashboard
+- `GET /api/v1/dashboard/customer`
+- `GET /api/v1/dashboard/provider`
+- `GET /api/v1/dashboard/admin`
 
-## 📁 Project Structure
+## Project structure
 
 ```
 patanai/
-├── backend/
-│   ├── app/
-│   │   ├── api/v1/endpoints/    # API routes
-│   │   ├── core/                # Config, security, DB
-│   │   ├── models/              # SQLAlchemy models
-│   │   ├── schemas/             # Pydantic schemas
-│   │   ├── services/           # Business logic
-│   │   └── main.py             # App entry
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── app/                 # Next.js pages
-│   │   ├── components/         # Reusable components
-│   │   ├── contexts/           # React contexts
-│   │   ├── lib/                # API client
-│   │   └── types/              # TypeScript types
-│   ├── package.json
-│   └── tailwind.config.ts
-├── SPEC.md                     # Project specification
-└── README.md
+├── backend/         # FastAPI backend
+├── frontend/        # Next.js frontend
+├── README.md        # Project overview
+├── SPEC.md          # Project spec
+├── IMPLEMENTATION_GUIDE.md
+├── QUICK_REFERENCE.md
+├── ADVANCED_BOOKING_SYSTEM.md
+├── TEST_REPORT.md
+├── DELIVERY_SUMMARY.md
+├── DOCUMENTATION_INDEX.md
 ```
 
-## 🔐 User Roles
+## Notes
 
-- **Customer**: Browse, book, and review services
-- **Provider**: Manage profile, accept bookings, view earnings
-- **Admin**: Manage users, providers, bookings, and analytics
-
-## 📱 Pages
-
-- `/` - Homepage with search and categories
-- `/services` - All service categories
-- `/services/[category]` - Category providers
-- `/provider/[id]` - Provider profile
-- `/search` - Search results
-- `/auth/login` - Login page
-- `/auth/signup` - Signup page
-- `/dashboard` - Customer dashboard
-- `/admin` - Admin dashboard
-- `/about` - About us
-- `/contact` - Contact form
-- `/faq` - FAQ page
-
-## 🎯 Key Features
-
-### Trust & Safety
-- Verified provider badges
-- Phone & CNIC verification
-- Review moderation
-- Report & block system
-
-### Pakistan-Specific
-- Urdu + English UI
-- Cash-friendly payments
-- WhatsApp integration
-- Local cities support
-
-### Performance
-- Fast loading on low internet
-- Mobile-first responsive design
-- Optimized images and assets
-
-## 📄 License
-
-This project is for demonstration purposes.
-
-## 👨‍💻 Author
-
-Built with ❤️ for Pakistan
-
----
-
-<p align="center">Sehat & Service - Your Trusted Local Services Marketplace</p>
+- The backend currently uses a demo OTP flow.
+- User creation is currently simulated for local development.
+- The app is ready for local review and documentation.

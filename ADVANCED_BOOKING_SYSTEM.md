@@ -1,263 +1,120 @@
-# Advanced Booking System - Complete Documentation
+# Advanced Booking System - Feature Documentation
 
-## 🎯 Overview
+## Overview
 
-This advanced booking system combines features from OLX, Uber, and other service platforms to create a **nationwide service booking platform for Pakistan**. The system is production-ready with features for customers, service providers, and administrators.
+Sehat & Service is a Pakistani hyperlocal marketplace connecting customers with local providers for home services, repairs, cleaning, and professional help.
 
----
+## User roles
 
-## 📊 System Architecture
+### Customer
+- Search providers by category, query, and city
+- View provider profiles, ratings, and reviews
+- Book services with date, time, and location
+- Track booking status
+- Leave reviews
+- Manage saved locations
 
-### Database Models
+### Provider
+- Manage service profile and categories
+- Set availability schedule and slots
+- Accept or reject bookings
+- Update online/offline status
+- View earnings and bookings
+- Receive notifications
 
-1. **User** - Customer and Provider accounts
-2. **Provider** - Service provider profiles with ratings and availability
-3. **Location** - GPS coordinates and addresses
-4. **Booking** - Service bookings with status tracking
-5. **PaymentTransaction** - Payment tracking and history
-6. **Notification** - Real-time notifications
-7. **ProviderSchedule** - Weekly availability schedules
-8. **BookingSlot** - Time slot bookings
-9. **ProviderOnlineStatus** - Real-time provider status
+### Admin
+- Monitor platform metrics
+- Review users and providers
+- Track booking volume
+- Review system health
 
----
+## Core features
 
-## 👥 USER TYPES & FEATURES
+### Search and discovery
+- Category-based browsing
+- Natural language search
+- City and rating filters
+- Provider profile details
 
-### 1. **CUSTOMER (Buyer)**
+### Booking lifecycle
+- Booking creation
+- Status workflow: requested → pending → accepted → on_way → in_progress → completed
+- Booking updates and customer notifications
 
-#### Capabilities:
-- ✅ Browse and search services by category, location, rating
-- ✅ View provider profiles with ratings and reviews
-- ✅ Book services with GPS location
-- ✅ Choose preferred payment method (Cash, Online, Wallet, JazzCash)
-- ✅ Track real-time provider location
-- ✅ Chat with provider
-- ✅ Submit reviews and ratings
-- ✅ Cancel bookings with refunds (3 free cancellations)
-- ✅ View booking history and invoices
-- ✅ Manage saved locations
-- ✅ Receive real-time notifications
+### Provider availability
+- Weekly schedule entries
+- Booking slot generation
+- Online/offline status management
 
-#### Dashboard Stats:
-- Total bookings
-- Completed bookings
-- Pending bookings
-- Total spent
-- Cancellation history
+### Payments
+- Cash, wallet, and mobile-money support
+- Payment transaction tracking
+- Status updates for completed payments
 
----
+### Notifications
+- Booking request alerts
+- Provider on the way updates
+- Service completed notifications
+- Review notifications
 
-### 2. **PROVIDER (Seller)**
-
-#### Capabilities:
-- ✅ Create service profile with skills and experience
-- ✅ Set availability schedule (flexible/fixed)
-- ✅ Create time slots for bookings
-- ✅ Update online/offline status with GPS location
-- ✅ Receive booking requests
-- ✅ Accept/Reject bookings
-- ✅ Track location during service
-- ✅ Complete bookings with verification code
-- ✅ Receive payments
-- ✅ View earnings and statistics
-- ✅ Manage reviews and ratings
-
-#### Dashboard Stats:
-- Total bookings
-- Completed bookings
-- Pending bookings
-- Total earnings
-- Average rating
-- Review count
-- Online status
-
----
-
-### 3. **ADMIN**
-
-#### Capabilities:
-- ✅ View platform statistics
-- ✅ Manage users and providers
-- ✅ Process disputes and complaints
-- ✅ View financial reports
-- ✅ Monitor provider quality (ratings)
-- ✅ Generate revenue reports
-
-#### Dashboard Stats:
-- Total users
-- Total providers
-- Total bookings
-- Total revenue
-- Average provider rating
-- Pending bookings
-
----
-
-## 🔄 BOOKING WORKFLOW
-
-```
-CUSTOMER                          PROVIDER
-   |                                  |
-   |--- Search Providers ------------->|
-   |                                  |
-   |--- View Profile & Details ------>|
-   |                                  |
-   |--- Create Booking (REQUESTED) --->|
-   |                                  |
-   |<-- Receive Notification ---------|
-   |                                  |
-   |                              ACCEPT/REJECT
-   |                                  |
-   |<-- Booking Accepted -------------|
-   |<-- Notification Sent ------------|
-   |                                  |
-   |<-- Provider On The Way ---------|
-   |<-- Real-time Location Tracking--|
-   |                                  |
-   |<-- Service In Progress ---------|
-   |                                  |
-   |<-- Service Completed ----------|
-   |<-- Completion Notification -----|
-   |                                  |
-   |--- Payment Processing -------->|
-   |                                  |
-   |--- Submit Review & Rating ----->|
-   |                                  |
-   |<-- Review Notification ---------|
-```
-
----
-
-## 🌍 LOCATION-BASED FEATURES
-
-### GPS Integration
-- Save multiple service locations
-- One-click current location detection
-- Find nearby providers based on radius
-- Distance-based sorting (1km - 50km)
-
-### Provider Locations
-- Real-time provider tracking during service
-- Last known location updates
-- Area-based service management
-
----
-
-## 💰 PAYMENT SYSTEM
-
-### Supported Methods
-1. **Cash on Delivery** - Pay after service completion
-2. **Online Payment** - Credit/Debit card via gateway
-3. **Digital Wallet** - In-app wallet system
-4. **JazzCash** - Mobile money integration
-5. **EasyPaisa** - Mobile money integration
-
-### Payment Tracking
-- Transaction history
-- Receipt generation
-- Refund processing
-- Wallet balance management
-
----
-
-## 🔔 NOTIFICATION SYSTEM
-
-### Notification Types
-
-| Event | Recipient | Type |
-|-------|-----------|------|
-| Booking Requested | Provider | booking_request |
-| Booking Accepted | Customer | booking_accepted |
-| Booking Rejected | Customer | booking_rejected |
-| Provider On Way | Customer | provider_on_way |
-| Service Started | Customer | service_started |
-| Service Completed | Customer | service_completed |
-| Payment Received | Provider | payment_received |
-| Review Submitted | Provider | review_received |
-| Chat Message | Both | chat_message |
-
-### Notification Channels
-- ✅ In-app notifications
-- ✅ SMS notifications (optional)
-- ✅ Push notifications (optional)
-
----
-
-## ⭐ RATING & REVIEW SYSTEM
-
-### Rating Scale
-- 1-5 stars
-- Weighted average calculation
-- Review count tracking
-
-### Features
+### Reviews
+- 1-5 star ratings
 - Text reviews
-- Photo uploads
-- Helpful votes
-- Response from providers
-- Report inappropriate reviews
+- Provider review aggregation
 
----
+## Booking workflow
 
-## 📅 SCHEDULING & AVAILABILITY
+1. Customer searches providers
+2. Customer views provider details
+3. Customer submits booking request
+4. Provider receives the request
+5. Provider accepts/rejects
+6. Customer receives status updates
+7. Service is performed
+8. Customer submits review
 
-### Provider Schedule Types
+## Location features
 
-**1. Fixed Schedule**
-- Monday-Sunday time slots
-- Max bookings per slot
-- Holiday management
+- Multiple saved service addresses
+- City-specific filtering
+- Distance-aware search
+- Provider location status updates
 
-**2. Flexible Schedule**
-- Real-time availability
-- Dynamic time slot creation
-- On-demand availability
+## Payment features
 
-### Booking Slots
-- 1-hour slots (customizable)
-- Automatic slot generation
-- Conflict prevention
-- Manual override option
+- Multi-method payment options
+- Transaction history tracking
+- Demo payment flow ready for extension
 
----
+## Notification features
 
-## 🛡️ SECURITY & TRUST
+- In-app notifications for booking events
+- Notification types for customers and providers
+- Simulated delivery in current MVP
 
-### Customer Protection
-- 3 free cancellations per month
-- Cancellation fee after limit
-- Secure payment gateway
-- Money-back guarantee
+## API endpoints
 
-### Provider Protection
-- Identity verification
-- Background checks (optional)
-- Dispute resolution
-- Payment guarantee
+- `POST /api/v1/auth/otp/send`
+- `POST /api/v1/auth/otp/verify`
+- `GET /api/v1/categories`
+- `GET /api/v1/categories/{slug}`
+- `GET /api/v1/providers`
+- `GET /api/v1/providers/{id}`
+- `GET /api/v1/providers/{id}/reviews`
+- `POST /api/v1/search`
+- `POST /api/v1/bookings`
+- `GET /api/v1/bookings`
+- `PUT /api/v1/bookings/{id}`
+- `GET /api/v1/dashboard/customer`
+- `GET /api/v1/dashboard/provider`
+- `GET /api/v1/dashboard/admin`
 
-### Platform Safety
-- Two-factor authentication
-- Encrypted communications
-- User ratings system
-- Verification badges
+## Notes
 
----
+- OTP is currently returned in the response for local testing.
+- The current implementation is focused on MVP viability.
+- This document explains the product-level features and expected flows.
 
-## 📱 API ENDPOINTS
-
-### Location Management
-```
-POST   /api/v1/locations                 - Add location
-GET    /api/v1/locations                 - Get locations
-```
-
-### Search
-```
-POST   /api/v1/search/advanced           - Advanced search with filters
-```
-
-### Booking
 ```
 POST   /api/v1/bookings/advanced         - Create advanced booking
 GET    /api/v1/bookings/{id}/details     - Get booking details

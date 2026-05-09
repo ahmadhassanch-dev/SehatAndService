@@ -1,223 +1,137 @@
-# Advanced Booking System - Quick Reference Guide
+# Advanced Booking System - Quick Reference
 
-## 🗄️ DATABASE SCHEMA
+This file is the quick technical reference for developers and reviewers. It contains the main database models, API endpoints, page routes, and important notes.
 
-### 1. **User Table**
-```
-id (PK)
-name
-phone (unique)
-email (unique)
-password_hash
-role (customer, provider, admin)
-photo
-city
-address
-is_verified
-is_active
-language (en, ur)
-cancellation_count
-wallet_balance
-created_at
-updated_at
+## Project Overview
+
+Sehat & Service is a Pakistani hyperlocal marketplace for home services. The backend is built with FastAPI and SQLAlchemy, and the frontend is built with Next.js and Tailwind CSS.
+
+## Run Commands
+
+### Backend
+```bash
+cd backend
+venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn app.main:app --app-dir backend --reload
 ```
 
-### 2. **Provider Table**
-```
-id (PK)
-user_id (FK to User)
-category
-subcategory
-bio
-skills (JSON)
-service_areas (JSON)
-pricing
-price_min
-price_max
-rating
-review_count
-verified
-cnic
-business_name
-diagnostic_fee
-availability_mode (flexible, fixed)
-bank_name
-account_holder
-account_number
-jazzcash_number
-easypaisa_number
-is_approved
-status (pending, approved, suspended)
-response_time
-created_at
-updated_at
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-### 3. **Location Table**
-```
-id (PK)
-user_id (FK to User)
-latitude (decimal 10,8)
-longitude (decimal 11,8)
-address
-city
-area
-last_updated
-```
+## API Endpoints
 
-### 4. **Booking Table**
-```
-id (PK)
-customer_id (FK to User)
-provider_id (FK to Provider)
-service_id (FK to ProviderService)
-service
-description
-status (requested, pending, accepted, on_way, in_progress, completed, cancelled, rejected)
-scheduled_date
-scheduled_time
-address
-city
-latitude
-longitude
-price
-estimated_price
-diagnostic_fee
-is_diagnostic_only
-verification_code
-notes
-created_at
-updated_at
-```
+### Authentication
+- `POST /api/v1/auth/otp/send` - Send OTP for login
+- `POST /api/v1/auth/otp/verify` - Verify OTP and receive token
 
-### 5. **PaymentTransaction Table**
-```
-id (PK)
-booking_id (FK to Booking)
-amount
-method (cash, online, wallet, bank_transfer, jazzcash, easypaisa)
-status (pending, completed, failed, refunded)
-transaction_id
-payment_data (JSON)
-created_at
-completed_at
-```
+### Categories
+- `GET /api/v1/categories` - List all service categories
+- `GET /api/v1/categories/{slug}` - Retrieve category details
 
-### 6. **Notification Table**
-```
-id (PK)
-user_id (FK to User)
-booking_id (FK to Booking, nullable)
-type (booking_request, booking_accepted, provider_on_way, service_completed, etc.)
-title
-message
-data (JSON)
-is_read
-created_at
-```
+### Providers
+- `GET /api/v1/providers` - Search and filter providers
+- `GET /api/v1/providers/{id}` - Get provider profile
+- `GET /api/v1/providers/{id}/reviews` - Get provider reviews
 
-### 7. **ProviderSchedule Table**
-```
-id (PK)
-provider_id (FK to Provider)
-day_of_week (0-6)
-start_time (HH:MM)
-end_time (HH:MM)
-is_available
-max_bookings
-created_at
-```
+### Search
+- `POST /api/v1/search` - Search providers by query, city, rating, and price
 
-### 8. **BookingSlot Table**
-```
-id (PK)
-provider_id (FK to Provider)
-date
-start_time
-end_time
-is_booked
-booking_id (FK to Booking, nullable)
-created_at
-```
+### Bookings
+- `POST /api/v1/bookings` - Create a booking request
+- `GET /api/v1/bookings` - Retrieve bookings for a user
+- `PUT /api/v1/bookings/{id}` - Update booking status
 
-### 9. **ProviderOnlineStatus Table**
-```
-id (PK)
-provider_id (FK to Provider, unique)
-status (online, offline, busy, on_break)
-last_seen
-current_location_lat (nullable)
-current_location_lng (nullable)
-is_available_for_booking
-```
+### Dashboard
+- `GET /api/v1/dashboard/customer` - Customer dashboard stats
+- `GET /api/v1/dashboard/provider` - Provider dashboard stats
+- `GET /api/v1/dashboard/admin` - Admin dashboard stats
 
-### 10. **ProviderService Table**
-```
-id (PK)
-provider_id (FK to Provider)
-name
-name_urdu (nullable)
-description
-description_urdu (nullable)
-price
-is_negotiable
-duration_minutes (nullable)
-category
-image_url
-status (active, pending, inactive)
-is_active
-created_at
-updated_at
-```
+## Primary Frontend Pages
 
-### 11. **Review Table**
-```
-id (PK)
-booking_id (FK to Booking)
-provider_id (FK to Provider)
-user_id (FK to User)
-rating (1-5)
-comment
-photos (JSON array of URLs)
-is_approved
-created_at
-```
+- `/` - Home page with search and categories
+- `/services` - Service categories list
+- `/services/[category]` - Category-specific providers
+- `/provider/[id]` - Provider profile and booking
+- `/search` - Search results page
+- `/auth/login` - Login / OTP entry
+- `/auth/signup` - Signup page
+- `/dashboard` - Customer dashboard
+- `/admin` - Admin overview
+- `/chat` - Chat interface
+- `/reviews` - Review page
 
-### 12. **Chat Table**
-```
-id (PK)
-booking_id (FK to Booking)
-sender_id (FK to User)
-message
-message_type (text, image, location)
-is_read
-created_at
-```
+## Core Database Models
 
----
+### User
+- Auth fields: `phone`, `email`, `password_hash`
+- Role: customer, provider, admin
+- Profile fields: `name`, `city`, `address`, `language`
+- Status flags: `is_verified`, `is_active`
+- Wallet/balance support
 
-## 🔗 TABLE RELATIONSHIPS
+### Provider
+- Linked to `User`
+- `category`, `skills`, `pricing`, `rating`
+- Payment accounts: bank, JazzCash, EasyPaisa
+- Availability and verification status
 
-```
-User (1) ──┬─→ (Many) Provider
-           ├─→ (Many) Booking (as customer_id)
-           ├─→ (Many) Location
-           ├─→ (Many) Notification
-           └─→ (Many) Chat (as sender_id)
+### Booking
+- Links `customer_id` and `provider_id`
+- `service`, `status`, schedule, location, price
+- Tracking fields: `verification_code`, `notes`, `timestamps`
 
-Provider (1) ──┬─→ (Many) Booking
-              ├─→ (Many) ProviderService
-              ├─→ (Many) ProviderSchedule
-              ├─→ (Many) BookingSlot
-              ├─→ (1) ProviderOnlineStatus
-              ├─→ (Many) Review
-              └─→ (Many) ProviderAvailability
+### PaymentTransaction
+- Tracks payment for a booking
+- `amount`, `method`, `status`, `transaction_id`
 
-Booking (1) ──┬─→ (1) User (customer)
-             ├─→ (1) Provider
-             ├─→ (Many) PaymentTransaction
-             ├─→ (Many) Review
-             ├─→ (1) BookingSlot
+### Notification
+- User notifications for booking events
+- `type`, `title`, `message`, `data`, `is_read`
+
+### ProviderSchedule
+- Weekly availability entries per provider
+- `day_of_week`, `start_time`, `end_time`, `max_bookings`
+
+### BookingSlot
+- Time slots for providers
+- `date`, `start_time`, `end_time`, `is_booked`
+
+### ProviderOnlineStatus
+- Real-time provider online/offline state
+- Current location and availability
+
+### ProviderService
+- Listed services with pricing and categories
+- `name`, `description`, `price`, `is_active`
+
+### Review
+- Ratings and written reviews linked to bookings
+- `rating`, `comment`, `photos`, `is_approved`
+
+### Chat
+- Messages for booking conversations
+- `sender_id`, `message_type`, `created_at`
+
+## Key Notes
+
+- OTP is currently mocked and returned in the response for local testing.
+- User creation is simulated in the current backend flow.
+- Backend app should be started from the repo root with `--app-dir backend`.
+- The frontend is served from `frontend/` and consumes the backend API.
+
+## Documentation Links
+
+- `README.md` - Project overview and startup guide
+- `IMPLEMENTATION_GUIDE.md` - Setup and architecture details
+- `ADVANCED_BOOKING_SYSTEM.md` - Feature documentation and workflows
+- `TEST_REPORT.md` - Test coverage and results
+- `DELIVERY_SUMMARY.md` - Delivery status and completion list
+
              └─→ (Many) Chat
 ```
 
