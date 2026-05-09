@@ -15,6 +15,7 @@ from app.schemas.schemas import (
 )
 from app.api.deps import get_any_user, get_current_provider
 from app.core.database import get_db
+from app.core.security import create_access_token
 from app.services import service
 
 router = APIRouter()
@@ -195,39 +196,58 @@ async def get_chats(booking_id: int):
 
 # ================== Auth ==================
 
-@router.post("/auth/otp/send")
-async def send_otp(request: OTPRequest):
-    """Send OTP to phone number"""
-    import random
-    otp = str(random.randint(100000, 999999))
-    service.store_otp(request.phone, otp)
-    # In production, this would send via SMS
     return {"message": "OTP sent successfully", "otp": otp}  # Remove OTP in production
 
 
+@router.post("/auth/signup", response_model=UserResponse)
+async def signup(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+    """Register a new user (customer or provider)"""
+    # Check if user already exists
+    existing_user = await service.get_user_by_phone(db, user_in.phone)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User with this phone number already exists")
+    
+    # Create user in database
+    user = await service.create_user_in_db(db, user_in)
+    return user
+
+
 @router.post("/auth/otp/verify", response_model=TokenResponse)
-async def verify_otp(request: OTPVerify):
+async def verify_otp(request: OTPVerify, db: AsyncSession = Depends(get_db)):
     """Verify OTP and return token"""
     if not service.verify_otp(request.phone, request.otp):
         raise HTTPException(status_code=400, detail="Invalid OTP")
     
-    # Create mock user response
-    user = UserResponse(
-        id=100,
-        name="Demo User",
-        phone=request.phone,
-        email="user@example.com",
-        role="customer",
-        city="Lahore",
-        language="en",
-        is_verified=True,
-        is_active=True,
-        created_at=None
-    )
+    # Get user from database
+    user = await service.get_user_by_phone(db, request.phone)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found. Please sign up first.")
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
     
     return TokenResponse(
-        access_token="mock_token_" + request.phone,
-        user=user
+        access_token=access_token,
+        user=UserResponse.from_orm(user)
+    )
+
+
+@router.post("/auth/login", response_model=TokenResponse)
+async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
+    """Login with phone and password"""
+    if not request.password:
+        raise HTTPException(status_code=400, detail="Password is required")
+        
+    user = await service.authenticate_user(db, request.phone, request.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid phone or password")
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    return TokenResponse(
+        access_token=access_token,
+        user=UserResponse.from_orm(user)
     )
 
 

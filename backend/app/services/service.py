@@ -17,7 +17,9 @@ from app.schemas.schemas import (
     AdvancedSearchRequest,
     ProviderWithAvailabilityResponse,
     AdvancedBookingCreate,
+    UserCreate,
 )
+from app.core.security import get_password_hash
 
 
 class NotificationType(str, Enum):
@@ -805,3 +807,108 @@ async def update_booking_status_with_notifications(
     await db.commit()
     await db.refresh(booking)
     return booking
+
+
+# ================== User Service Functions ==================
+
+async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
+    """Get user by ID from database"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
+
+
+async def send_otp(phone: str) -> str:
+    """
+    Generate and 'send' OTP.
+    In production, this should integrate with an SMS gateway like:
+    - Twilio
+    - Infobip
+    - Local Pakistani gateways (Veer, Zong/Jazz Enterprise SMS)
+    """
+    otp = create_otp()
+    MOCK_OTPS[phone] = otp
+    
+    # --- REAL SMS INTEGRATION PLACEHOLDER ---
+    # Example for a generic SMS API:
+    # try:
+    #     import httpx
+    #     # response = await httpx.post("https://api.sms-gateway.com/send", json={
+    #     #     "to": phone,
+    #     #     "message": f"Your Sehat & Service OTP is: {otp}",
+    #     #     "api_key": "YOUR_KEY"
+    #     # })
+    #     pass
+    # except Exception as e:
+    #     print(f"Failed to send SMS: {e}")
+    # -----------------------------------------
+    
+    print(f"DEBUG: Sent OTP {otp} to {phone}")
+    return otp
+
+
+async def get_user_by_phone(db: AsyncSession, phone: str) -> Optional[User]:
+    """Get user by phone from database"""
+    result = await db.execute(select(User).where(User.phone == phone))
+    return result.scalar_one_or_none()
+
+
+async def get_provider_by_user_id(db: AsyncSession, user_id: int) -> Optional[Provider]:
+    """Get provider profile by user ID"""
+    result = await db.execute(select(Provider).where(Provider.user_id == user_id))
+    return result.scalar_one_or_none()
+
+
+async def create_user_in_db(db: AsyncSession, user_in: UserCreate) -> User:
+    """Create a new user in the database"""
+    # Create user object
+    db_user = User(
+        name=user_in.name,
+        phone=user_in.phone,
+        email=user_in.email,
+        city=user_in.city,
+        role=user_in.role.value if hasattr(user_in.role, 'value') else user_in.role,
+        language=user_in.language,
+        password_hash=get_password_hash(user_in.password) if user_in.password else None,
+        is_active=True,
+        is_verified=False
+    )
+    
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    
+    # If role is provider, create a basic provider profile
+    if db_user.role == "provider":
+        db_provider = Provider(
+            user_id=db_user.id,
+            category="Other",  # Default category, should be updated later
+            is_approved=False,
+            verified=False,
+            rating=0.0,
+            review_count=0
+        )
+        db.add(db_provider)
+        
+        # Also create online status record
+        db_status = ProviderOnlineStatus(
+            provider_id=db_provider.id,
+            status="offline",
+            is_available_for_booking=False
+        )
+        db.add(db_status)
+        
+        await db.commit()
+    
+    return db_user
+
+
+async def authenticate_user(db: AsyncSession, phone: str, password: str) -> Optional[User]:
+    """Authenticate a user by phone and password."""
+    user = await get_user_by_phone(db, phone)
+    if not user:
+        return None
+    if not user.password_hash:
+        return None
+    if not verify_password(password, user.password_hash):
+        return None
+    return user
