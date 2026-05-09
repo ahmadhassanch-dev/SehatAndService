@@ -1,7 +1,33 @@
+from enum import Enum
 from typing import List, Optional
 from datetime import datetime
 import random
 import json
+
+from sqlalchemy import select, delete, update, or_, and_
+from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.models import (
+    User, Provider, Booking, Review, Chat, Category, Complaint,
+    Location, PaymentTransaction, Notification, ProviderSchedule,
+    BookingSlot, ProviderOnlineStatus, ProviderService, BookingStatus
+)
+from app.schemas.schemas import (
+    AdvancedSearchRequest,
+    ProviderWithAvailabilityResponse,
+    AdvancedBookingCreate,
+)
+
+
+class NotificationType(str, Enum):
+    BOOKING_REQUEST = "booking_request"
+    BOOKING_ACCEPTED = "booking_accepted"
+    PROVIDER_ON_WAY = "provider_on_way"
+    SERVICE_STARTED = "service_started"
+    SERVICE_COMPLETED = "service_completed"
+    BOOKING_REJECTED = "booking_rejected"
+
 
 # Mock data storage (in-memory for MVP)
 MOCK_USERS = {}

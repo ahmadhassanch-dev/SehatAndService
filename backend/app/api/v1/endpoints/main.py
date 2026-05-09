@@ -1,17 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.models import User
 from app.schemas.schemas import (
     CategoryResponse, ProviderListResponse, ProviderResponse, BookingResponse,
     ReviewResponse, ChatResponse, SearchRequest, SearchResponse, BookingCreate,
     ReviewCreate, ChatCreate, UserCreate, UserResponse, OTPRequest, OTPVerify,
     TokenResponse, CustomerDashboard, ProviderDashboard, AdminDashboard,
-    ProviderServiceResponse, ProviderServiceCreate, ProviderServiceUpdate,
     ProviderCreate, ProviderUpdate, AdvancedBookingCreate, AdvancedSearchRequest,
     AdvancedSearchResponse, ProviderWithAvailabilityResponse, LocationCreate,
     LocationResponse, PaymentTransactionCreate, PaymentTransactionResponse,
     NotificationResponse, ProviderScheduleCreate, ProviderScheduleResponse,
     BookingSlotResponse, ProviderOnlineStatusResponse
 )
+from app.api.deps import get_any_user, get_current_provider
+from app.core.database import get_db
 from app.services import service
 
 router = APIRouter()

@@ -322,3 +322,136 @@ class AdminDashboard(BaseModel):
     pending_providers: int
     pending_reviews: int
     open_complaints: int
+
+
+class SearchLocation(BaseModel):
+    lat: float
+    lng: float
+    radius_km: Optional[float] = None
+
+
+class AdvancedSearchRequest(BaseModel):
+    query: str = Field(..., min_length=2)
+    category: Optional[str] = None
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    radius_km: Optional[float] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    min_rating: Optional[float] = None
+    verified_only: bool = False
+    sort_by: str = "rating"
+    page: int = 1
+    limit: int = 20
+
+
+class ProviderWithAvailabilityResponse(ProviderResponse):
+    distance_km: Optional[float] = None
+
+
+class AdvancedSearchResponse(BaseModel):
+    providers: List[ProviderWithAvailabilityResponse]
+    total: int
+    search_location: Optional[SearchLocation] = None
+
+
+class AdvancedBookingCreate(BookingBase):
+    provider_id: int
+    service_id: Optional[int] = None
+    payment_method: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_diagnostic_only: bool = False
+
+
+class LocationCreate(BaseModel):
+    latitude: float
+    longitude: float
+    address: str
+    city: Optional[str] = None
+    area: Optional[str] = None
+
+
+class LocationResponse(LocationCreate):
+    id: int
+    user_id: int
+    last_updated: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PaymentTransactionCreate(BaseModel):
+    amount: float
+    method: str
+    status: Optional[str] = "pending"
+    transaction_id: Optional[str] = None
+    payment_data: Optional[str] = None
+
+
+class PaymentTransactionResponse(PaymentTransactionCreate):
+    id: int
+    booking_id: int
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    user_id: int
+    booking_id: Optional[int] = None
+    type: str
+    title: str
+    message: str
+    data: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProviderScheduleCreate(BaseModel):
+    day_of_week: int
+    start_time: str
+    end_time: str
+    is_available: bool = True
+    max_bookings: int = 1
+
+
+class ProviderScheduleResponse(ProviderScheduleCreate):
+    id: int
+    provider_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class BookingSlotResponse(BaseModel):
+    id: int
+    provider_id: int
+    date: datetime
+    start_time: str
+    end_time: str
+    is_booked: bool
+    booking_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProviderOnlineStatusResponse(BaseModel):
+    id: int
+    provider_id: int
+    status: str
+    current_location_lat: Optional[float] = None
+    current_location_lng: Optional[float] = None
+    is_available_for_booking: bool
+    last_seen: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

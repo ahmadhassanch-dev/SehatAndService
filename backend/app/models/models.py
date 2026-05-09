@@ -42,6 +42,7 @@ class User(Base):
     provider_profile = relationship("Provider", back_populates="user", uselist=False)
     bookings = relationship("Booking", back_populates="customer")
     reviews = relationship("Review", back_populates="user")
+    locations = relationship("Location", back_populates="user")
 
 
 class Provider(Base):
@@ -71,6 +72,8 @@ class Provider(Base):
     user = relationship("User", back_populates="provider_profile")
     bookings = relationship("Booking", back_populates="provider")
     reviews = relationship("Review", back_populates="provider")
+    services = relationship("ProviderService", back_populates="provider")
+    online_status = relationship("ProviderOnlineStatus", back_populates="provider", uselist=False)
 
 
 class Booking(Base):
@@ -86,8 +89,14 @@ class Booking(Base):
     scheduled_time = Column(String(20), nullable=True)
     address = Column(Text, nullable=False)
     city = Column(String(100), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     price = Column(Float, default=0)
     estimated_price = Column(Float, default=0)
+    diagnostic_fee = Column(Float, default=0)
+    verification_code = Column(String(20), nullable=True)
+    payment_method = Column(String(50), nullable=True)
+    service_id = Column(Integer, ForeignKey("provider_services.id"), nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -97,6 +106,7 @@ class Booking(Base):
     provider = relationship("Provider", back_populates="bookings")
     reviews = relationship("Review", back_populates="booking")
     chats = relationship("Chat", back_populates="booking")
+    transactions = relationship("PaymentTransaction", back_populates="booking")
 
 
 class Review(Base):
@@ -157,3 +167,108 @@ class Complaint(Base):
     description = Column(Text, nullable=False)
     status = Column(String(20), default="pending")  # pending, resolved, rejected
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProviderService(Base):
+    __tablename__ = "provider_services"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"))
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Float, default=0)
+    is_negotiable = Column(Boolean, default=False)
+    duration_minutes = Column(Integer, nullable=True)
+    category = Column(String(100), nullable=True)
+    image_url = Column(String(500), nullable=True)
+    status = Column(String(50), default="active")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    provider = relationship("Provider", back_populates="services")
+
+
+class Location(Base):
+    __tablename__ = "locations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    address = Column(Text, nullable=False)
+    city = Column(String(100), nullable=True)
+    area = Column(String(100), nullable=True)
+    last_updated = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="locations")
+
+
+class PaymentTransaction(Base):
+    __tablename__ = "payment_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"))
+    amount = Column(Float, nullable=False)
+    method = Column(String(50), nullable=False)
+    status = Column(String(50), default="pending")
+    transaction_id = Column(String(200), nullable=True)
+    payment_data = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+    booking = relationship("Booking", back_populates="transactions")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True)
+    type = Column(String(100), nullable=False)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    data = Column(Text, nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProviderSchedule(Base):
+    __tablename__ = "provider_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"))
+    day_of_week = Column(Integer, nullable=False)
+    start_time = Column(String(20), nullable=False)
+    end_time = Column(String(20), nullable=False)
+    is_available = Column(Boolean, default=True)
+    max_bookings = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BookingSlot(Base):
+    __tablename__ = "booking_slots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"))
+    date = Column(DateTime, nullable=False)
+    start_time = Column(String(20), nullable=False)
+    end_time = Column(String(20), nullable=False)
+    is_booked = Column(Boolean, default=False)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProviderOnlineStatus(Base):
+    __tablename__ = "provider_online_status"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"), unique=True)
+    status = Column(String(50), default="offline")
+    current_location_lat = Column(Float, nullable=True)
+    current_location_lng = Column(Float, nullable=True)
+    is_available_for_booking = Column(Boolean, default=False)
+    last_seen = Column(DateTime, default=datetime.utcnow)
+
+    provider = relationship("Provider", back_populates="online_status")
